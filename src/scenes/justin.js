@@ -71,6 +71,12 @@ class Justin extends Phaser.Scene
 		/** Ensures that the input to processInput() is valid */
 		function ensureValidInput()
 		{
+			if (inputImageMatrix.length < 1) {
+				throw new Error("Input image height is less than or equal to 0. Can't have an image with no height!");
+			}
+			if (inputImageMatrix[0].length < 1) {
+				throw new Error("Input image width is less than or equal to 0. Can't have an image with no width!");
+			}
 			if (patternWidth < 1) {
 				throw new Error("Pattern width is less than or equal to 0. Can't have a pattern made of 0x0, (-1)x(-1) tiles, etc!");
 			}
