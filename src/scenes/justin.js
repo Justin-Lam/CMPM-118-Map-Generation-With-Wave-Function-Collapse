@@ -18,10 +18,15 @@ class Justin extends Phaser.Scene
 			[SAND_C,	SAND_C,		WATER],
 			[GRASS_C,	GRASS_C,	SAND_C]
 		];
+		const inputImageMatrix2 = [
+			[WATER,		WATER,		WATER],
+			[SAND_C,	SAND_C,		SAND_C],
+			[GRASS_C,	GRASS_C,	SAND_C]
+		];
 
 		// preview of the input image
 		const map = this.make.tilemap({
-			data: inputImageMatrix,
+			data: inputImageMatrix2,
 			tileWidth: TILE_WIDTH,
 			tileHeight: TILE_WIDTH
 		});
@@ -54,18 +59,19 @@ class Justin extends Phaser.Scene
 
 
 		// Logic
-		this.processInput(inputImageMatrix, 2);
+		this.processInput(inputImageMatrix2, 2);
+		console.log(WFC.patterns.length);
 	}
 
 	/**
-	 * Populates the WFC global object's data structures that are necessary for running the core algorithm.
+	 * Populates WFC.patterns which is necessary for running the core algorithm.
 	 * @param {number[][]} inputImageMatrix the data representation of the input image as a 2D array of tile IDs
 	 * @param {number} patternWidth N (as in NxN)
 	 */
 	processInput(inputImageMatrix, patternWidth)
 	{
 		ensureValidInput();
-		WFC.patterns = createPatterns();
+		createPatterns();
 
 
 		/** Ensures that the input to processInput() is valid. */
@@ -91,13 +97,20 @@ class Justin extends Phaser.Scene
 		 */
 		function createPatterns()
 		{
-			const patterns = [];
 			for (let y = 0; y < inputImageMatrix.length; y++) {
 				for (let x = 0; x < inputImageMatrix.length; x++) {
-					patterns.push(createPattern(y, x));
+
+					const pattern = createPattern(y, x);
+					const index = getPatternIndex(pattern);
+					if (index == -1) {
+						WFC.patterns.push(createPattern(y, x));
+					}
+					else {
+						WFC.patterns[index].weight++;
+					}
+
 				}
 			}
-			return patterns;
 
 
 			/**
@@ -139,6 +152,37 @@ class Justin extends Phaser.Scene
 					}
 					return tiles;
 				}
+			}
+
+			function getPatternIndex(pattern)
+			{
+				// for each pattern already made
+				for (let i = 0; i < WFC.patterns.length; i++) {
+
+					let patternsMatch = true;
+
+					// for each tile in the patterns
+					for (let y = 0; y < pattern.tiles.length; y++) {
+						for (let x = 0; x < pattern.tiles.length; x++) {
+
+							if (pattern.tiles[y][x] != WFC.patterns[i].tiles[y][x]) {
+								patternsMatch = false;
+								break;
+							}
+
+						}
+						if (!patternsMatch) {
+							break;
+						}
+					}
+
+					if (patternsMatch) {
+						return i;
+					}
+
+				}
+
+				return -1;
 			}
 		}
 	}
