@@ -45,7 +45,7 @@ class Justin extends Phaser.Scene
 			}
 
 			patternMap = this.make.tilemap({
-				data: WFC.patterns[i],
+				data: WFC.patterns[i].tiles,
 				tileWidth: TILE_WIDTH,
 				tileHeight: TILE_WIDTH
 			});
@@ -59,7 +59,7 @@ class Justin extends Phaser.Scene
 
 	/**
 	 * Populates the WFC global object's data structures that are necessary for running the core algorithm.
-	 * @param {number[][]} inputImageMatrix The data representation of the input image as a 2D array of tile IDs
+	 * @param {number[][]} inputImageMatrix the data representation of the input image as a 2D array of tile IDs
 	 * @param {number} patternWidth N (as in NxN)
 	 */
 	processInput(inputImageMatrix, patternWidth)
@@ -68,7 +68,7 @@ class Justin extends Phaser.Scene
 		WFC.patterns = createPatterns();
 
 
-		/** Ensures that the input to processInput() is valid */
+		/** Ensures that the input to processInput() is valid. */
 		function ensureValidInput()
 		{
 			if (inputImageMatrix.length < 1) {
@@ -87,7 +87,7 @@ class Justin extends Phaser.Scene
 
 		/**
 		 * Iterates over each tile in the input image matrix, making a pattern for each.
-		 * @returns {number[][][]} A list of patterns
+		 * @returns {number[][][]} a list of patterns
 		 */
 		function createPatterns()
 		{
@@ -101,24 +101,44 @@ class Justin extends Phaser.Scene
 
 
 			/**
-			 * Creates a single NxN pattern
-			 * @param {*} y Refers to the y position of the top left tile of the pattern in the input image
-			 * @param {*} x Refers to the x position of the top left tile of the pattern in the input image
-			 * @returns {number[][]} A pattern, which is a 2D array of tile IDs
+			 * Creates a pattern.
+			 * @param {*} y refers to the y position of the top left tile of the pattern in the input image
+			 * @param {*} x refers to the x position of the top left tile of the pattern in the input image
+			 * @returns {{
+			 * 	tiles: [], 
+			 * 	adjacencies: [], 
+			 * 	weight: number
+			 * }} a pattern object
 			 */
 			function createPattern(y, x)
 			{
-				const pattern = [];
-				for (let ny = 0; ny < patternWidth; ny++) {
-				// Ny and Nx refer to the 1st and 2nd N in NxN
-					pattern[ny] = [];
-					for (let nx = 0; nx < patternWidth; nx++) {
-						// iterating over an array without going out of bounds by looping
-						// relearned this pattern from https://banjocode.com/post/javascript/iterate-array-with-modulo
-						pattern[ny][nx] = inputImageMatrix[(y + ny) % inputImageMatrix.length][(x + nx) % inputImageMatrix.length];
+				return {
+					tiles: getTiles(y, x),
+					adjacencies: [],
+					weight: 1
+				};
+
+
+				/**
+				 * Gets the tiles for a pattern.
+				 * @param {*} y refers to the y position of the top left tile of the pattern in the input image
+				 * @param {*} x refers to the x position of the top left tile of the pattern in the input image
+				 * @returns {number[][]} a 2D array of tile IDs
+				 */
+				function getTiles(y, x)
+				{
+					const tiles = [];
+					for (let ny = 0; ny < patternWidth; ny++) {
+					// Ny and Nx refer to the 1st and 2nd N in NxN
+						tiles[ny] = [];
+						for (let nx = 0; nx < patternWidth; nx++) {
+							// iterating over an array without going out of bounds by looping
+							// relearned this pattern from https://banjocode.com/post/javascript/iterate-array-with-modulo
+							tiles[ny][nx] = inputImageMatrix[(y + ny) % inputImageMatrix.length][(x + nx) % inputImageMatrix.length];
+						}
 					}
+					return tiles;
 				}
-				return pattern;
 			}
 		}
 	}
