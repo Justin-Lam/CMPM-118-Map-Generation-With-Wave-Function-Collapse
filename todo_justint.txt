@@ -1,0 +1,10 @@
+potential design for pattern data structure?
+let pattern = {
+	num: 0,
+	tiles: [
+		[],
+		[]
+		// can be 2 or 3 or even more
+	],
+	weight: 1
+}

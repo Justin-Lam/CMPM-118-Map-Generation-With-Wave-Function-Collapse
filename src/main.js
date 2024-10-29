@@ -5,10 +5,10 @@
 const OUTPUT_MAP_WIDTH = 20;		// (of a map) width in tiles
 const TILE_WIDTH = 64;				// (of a tile) width in pixels
 
-// Tile IDs
+// Tile IDs:
 // C = "center", BR = "bottom right", LM = "left middle", TL = "top left", etc.
-const BLANK = 195;		// blank
-const WATER = 56;		// water
+const BLANK = 195;
+const WATER = 56;
 
 const GRASS_C = 40;
 const GRASS_BR = 11;
@@ -39,6 +39,11 @@ const DIRT_TM = 190;
 const DIRT_TL = 9;
 const DIRT_RM = 161;
 const DIRT_LM = 189;
+
+// WFC Data Structures
+const WFC = {
+	patterns: []
+};
 
 // Game Config:
 let config = {
