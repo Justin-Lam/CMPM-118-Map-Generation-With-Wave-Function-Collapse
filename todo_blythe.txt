@@ -1,0 +1,1 @@
+Do we need a Cell data type? Or we use parallel arrays (wave matrix + an entropy array)
