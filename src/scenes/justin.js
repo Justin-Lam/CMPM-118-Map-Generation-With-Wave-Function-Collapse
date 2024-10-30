@@ -10,10 +10,15 @@ class Justin extends Phaser.Scene
 		this.load.image("map pack", "mapPack_spritesheet.png");
 	}
 
+	debug()
+	{
+		
+	}
+
 	create()
 	{
-		// test input image
-		const inputImageMatrix = [
+		// test input images
+		const inputImageMatrix1 = [
 			[WATER,		WATER,		WATER],
 			[SAND_C,	SAND_C,		WATER],
 			[GRASS_C,	GRASS_C,	SAND_C]
@@ -23,10 +28,21 @@ class Justin extends Phaser.Scene
 			[SAND_C,	SAND_C,		SAND_C],
 			[GRASS_C,	GRASS_C,	SAND_C]
 		];
+		const inputImageMatrix3 = [
+			[WATER,		WATER,		WATER],
+			[SAND_C,	SAND_C,		SAND_C],
+			[GRASS_C,	GRASS_C,	GRASS_C]
+		];
+		const inputImageMatrix4 = [
+			[WATER,	WATER,	WATER],
+			[WATER,	WATER,	WATER],
+			[WATER,	WATER,	WATER]
+		];
+		const inputImageMatrix = inputImageMatrix1;
 
 		// preview of the input image
 		const map = this.make.tilemap({
-			data: inputImageMatrix2,
+			data: inputImageMatrix,
 			tileWidth: TILE_WIDTH,
 			tileHeight: TILE_WIDTH
 		});
@@ -38,17 +54,14 @@ class Justin extends Phaser.Scene
 		let i = -1;
 		this.debugKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
 		this.debugKey.on("down", (key, event) => {
-
 			if (i+1 > WFC.patterns.length-1) {
 				console.log("no more patterns to see");
 				return;
 			}
 			i++;
-
 			if (patternMap) {
 				patternMap.destroy();
 			}
-
 			patternMap = this.make.tilemap({
 				data: WFC.patterns[i].tiles,
 				tileWidth: TILE_WIDTH,
@@ -59,19 +72,19 @@ class Justin extends Phaser.Scene
 
 
 		// Logic
-		this.processInput(inputImageMatrix2, 2);
-		console.log(WFC.patterns.length);
+		this.processInput(inputImageMatrix, 2);
+		console.log(WFC.patterns.length + " unique patterns");
 	}
 
 	/**
-	 * Populates WFC.patterns which is necessary for running the core algorithm.
+	 * Processes the input to get necessary pattern data for running the constraint solver. Records this data in the global WFC object.
 	 * @param {number[][]} inputImageMatrix the data representation of the input image as a 2D array of tile IDs
 	 * @param {number} patternWidth N (as in NxN)
 	 */
 	processInput(inputImageMatrix, patternWidth)
 	{
 		ensureValidInput();
-		createPatterns();
+		WFC.patterns = createPatterns();
 
 
 		/** Ensures that the input to processInput() is valid. */
@@ -93,35 +106,31 @@ class Justin extends Phaser.Scene
 
 		/**
 		 * Iterates over each tile in the input image matrix, making a pattern for each.
-		 * @returns {number[][][]} a list of patterns
+		 * @returns {{}[]} an array of unqiue pattern objects
 		 */
 		function createPatterns()
 		{
+			const patterns = [];
 			for (let y = 0; y < inputImageMatrix.length; y++) {
-				for (let x = 0; x < inputImageMatrix.length; x++) {
-
+				for (let x = 0; x < inputImageMatrix[0].length; x++) {
 					const pattern = createPattern(y, x);
-					const index = getPatternIndex(pattern);
+					const index = getPatternIndex(pattern, patterns);
 					if (index == -1) {
-						WFC.patterns.push(createPattern(y, x));
+						patterns.push(pattern);
 					}
 					else {
-						WFC.patterns[index].weight++;
+						patterns[index].weight++;
 					}
-
 				}
 			}
+			return patterns;
 
 
 			/**
 			 * Creates a pattern.
-			 * @param {*} y refers to the y position of the top left tile of the pattern in the input image
-			 * @param {*} x refers to the x position of the top left tile of the pattern in the input image
-			 * @returns {{
-			 * 	tiles: [], 
-			 * 	adjacencies: [], 
-			 * 	weight: number
-			 * }} a pattern object
+			 * @param {number} y the y position of the top left tile of the pattern in the input image
+			 * @param {number} x the x position of the top left tile of the pattern in the input image
+			 * @returns {{}} a pattern object
 			 */
 			function createPattern(y, x)
 			{
@@ -131,11 +140,11 @@ class Justin extends Phaser.Scene
 					weight: 1
 				};
 
-
+				
 				/**
-				 * Gets the tiles for a pattern.
-				 * @param {*} y refers to the y position of the top left tile of the pattern in the input image
-				 * @param {*} x refers to the x position of the top left tile of the pattern in the input image
+				 * Returns the tiles of a pattern.
+				 * @param {number} y the y position of the top left tile of the pattern in the input image
+				 * @param {number} x the x position of the top left tile of the pattern in the input image
 				 * @returns {number[][]} a 2D array of tile IDs
 				 */
 				function getTiles(y, x)
@@ -145,7 +154,7 @@ class Justin extends Phaser.Scene
 					// Ny and Nx refer to the 1st and 2nd N in NxN
 						tiles[ny] = [];
 						for (let nx = 0; nx < patternWidth; nx++) {
-							// iterating over an array without going out of bounds by looping
+							// using modulo to loop around an array in order to avoid going out of bounds
 							// relearned this pattern from https://banjocode.com/post/javascript/iterate-array-with-modulo
 							tiles[ny][nx] = inputImageMatrix[(y + ny) % inputImageMatrix.length][(x + nx) % inputImageMatrix.length];
 						}
@@ -154,35 +163,17 @@ class Justin extends Phaser.Scene
 				}
 			}
 
-			function getPatternIndex(pattern)
+			/**
+			 * Finds the index of a pattern in an array of patterns by comparing tiles.
+			 * @param {{}} pattern the pattern to check
+			 * @param {{}[]} patterns an array of patterns
+			 * @returns {number} the index at which pattern is in patterns if true, or -1 if false
+			 */
+			function getPatternIndex(pattern, patterns)
 			{
-				// for each pattern already made
-				for (let i = 0; i < WFC.patterns.length; i++) {
-
-					let patternsMatch = true;
-
-					// for each tile in the patterns
-					for (let y = 0; y < pattern.tiles.length; y++) {
-						for (let x = 0; x < pattern.tiles.length; x++) {
-
-							if (pattern.tiles[y][x] != WFC.patterns[i].tiles[y][x]) {
-								patternsMatch = false;
-								break;
-							}
-
-						}
-						if (!patternsMatch) {
-							break;
-						}
-					}
-
-					if (patternsMatch) {
-						return i;
-					}
-
-				}
-
-				return -1;
+				// learned about findIndex() and every() from ChatGPT when asking it to refactor my old code for this function
+				// find the index at which the input pattern matches with an element in patterns; determine a match by comparing tiles
+				return patterns.findIndex(patternElem => pattern.tiles.every((row, y) => row.every((tile, x) => tile == patternElem.tiles[y][x])));
 			}
 		}
 	}
