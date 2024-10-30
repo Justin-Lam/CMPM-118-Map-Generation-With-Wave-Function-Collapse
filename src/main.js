@@ -4,6 +4,7 @@
 // Contants:
 const OUTPUT_MAP_WIDTH = 20;		// (of a map) width in tiles
 const TILE_WIDTH = 64;				// (of a tile) width in pixels
+const MAX_ATTEMPTS = 10;
 
 // Tile IDs:
 // C = "center", BR = "bottom right", LM = "left middle", TL = "top left", etc.
