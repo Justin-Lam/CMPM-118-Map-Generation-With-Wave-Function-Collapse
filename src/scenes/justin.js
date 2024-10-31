@@ -74,6 +74,16 @@ class Justin extends Phaser.Scene
 		// Logic
 		this.processInput(inputImageMatrix, 2);
 		console.log(WFC.patterns.length + " unique patterns");
+		const y = 2;
+		const x = 1;
+		const len = 3;
+		//console.log( (((y * len + x) + 1) % len) + y*len );			// right
+		//console.log( (y*len) + ((x+1)%len) );							// right
+		//console.log( (((y * len + x) - 1 + len) % len) + y*len );		// left
+		//console.log( (y*len) + ((x-1+len)%len) );						// left
+		console.log( ((y-1+len)%len) * len + x );						// up
+		//console.log( ((y+1)%len) * len + x );							// down
+		
 	}
 
 	/**
@@ -128,7 +138,21 @@ class Justin extends Phaser.Scene
 			}
 
 			// populate the adjacencies attribute of the patterns
-			
+			for (let y = 0; y < inputImageMatrix.length; y++) {
+				for (let x = 0; x < inputImageMatrix[0].length; x++) {
+
+					const adjacency = {
+						otherPatternIndex: ((y * inputImageMatrix.length + x) + 1) % ((y+1) * inputImageMatrix.length),
+						direction: RIGHT
+					}
+
+					const adjacency2 = {
+						otherPatternIndex: ((y * inputImageMatrix.length + x) - 1 + inputImageMatrix.length) % ((y+1) * inputImageMatrix.length),
+						direction: LEFT
+					}
+					
+				}
+			}
 
 			// populate the weight attribute of the patterns while removing any unoriginal patterns
 			// an unoriginal pattern has the same tiles as an original one
