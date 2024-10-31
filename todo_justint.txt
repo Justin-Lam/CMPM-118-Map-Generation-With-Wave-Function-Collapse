@@ -11,4 +11,7 @@ let pattern = {
 let adjacency = {
 	patternIndex: 3,
 	direction = [1, -1]
+	// owner pattern can be placed to the DIRECTION of a PATTERN_INDEX pattern
 }
+
+third parameter for processInput to enable/disable rotations and reflections?

@@ -110,57 +110,63 @@ class Justin extends Phaser.Scene
 		 */
 		function createPatterns()
 		{
+			// make array of pattern objects (empty)
 			const patterns = [];
-			for (let y = 0; y < inputImageMatrix.length; y++) {
-				for (let x = 0; x < inputImageMatrix[0].length; x++) {
-					const pattern = createPattern(y, x);
-					const index = getPatternIndex(pattern, patterns);
-					if (index == -1) {
-						patterns.push(pattern);
-					}
-					else {
-						patterns[index].weight++;
-					}
-				}
-			}
-			return patterns;
-
-
-			/**
-			 * Creates a pattern.
-			 * @param {number} y the y position of the top left tile of the pattern in the input image
-			 * @param {number} x the x position of the top left tile of the pattern in the input image
-			 * @returns {{}} a pattern object
-			 */
-			function createPattern(y, x)
-			{
-				return {
-					tiles: getTiles(y, x),
+			for (let i = 0; i < Math.pow(inputImageMatrix.length, 2); i++) {
+				patterns[i] = {
+					tiles: [],
 					adjacencies: [],
 					weight: 1
 				};
+			}
 
-				
-				/**
-				 * Returns the tiles of a pattern.
-				 * @param {number} y the y position of the top left tile of the pattern in the input image
-				 * @param {number} x the x position of the top left tile of the pattern in the input image
-				 * @returns {number[][]} a 2D array of tile IDs
-				 */
-				function getTiles(y, x)
-				{
-					const tiles = [];
-					for (let ny = 0; ny < patternWidth; ny++) {
-					// Ny and Nx refer to the 1st and 2nd N in NxN
-						tiles[ny] = [];
-						for (let nx = 0; nx < patternWidth; nx++) {
-							// using modulo to loop around an array in order to avoid going out of bounds
-							// relearned this pattern from https://banjocode.com/post/javascript/iterate-array-with-modulo
-							tiles[ny][nx] = inputImageMatrix[(y + ny) % inputImageMatrix.length][(x + nx) % inputImageMatrix.length];
-						}
-					}
-					return tiles;
+			// populate the tiles attribute of the patterns
+			for (let y = 0; y < inputImageMatrix.length; y++) {
+				for (let x = 0; x < inputImageMatrix[0].length; x++) {
+					patterns[y * inputImageMatrix.length + x].tiles = getTiles(y, x);
 				}
+			}
+
+			// populate the adjacencies attribute of the patterns
+			
+
+			// populate the weight attribute of the patterns while removing any unoriginal patterns
+			// an unoriginal pattern has the same tiles as an original one
+			// the original pattern gains any adjacencies the unoriginal one has that the original one doesn't already have
+			const uniquePatterns = [];
+			for (let i = 0; i < patterns.length; i++) {
+				const index = getPatternIndex(patterns[i], uniquePatterns);
+				if (index == -1) {
+					uniquePatterns.push(patterns[i]);
+				}
+				else {
+					// gain any new adjacencies();
+					uniquePatterns[index].weight++;
+				}
+			}
+			
+			return uniquePatterns;
+
+
+			/**
+			 * Returns the tiles of a pattern.
+			 * @param {number} y the y position of the top left tile of the pattern in the input image
+			 * @param {number} x the x position of the top left tile of the pattern in the input image
+			 * @returns {number[][]} a 2D array of tile IDs
+			 */
+			function getTiles(y, x)
+			{
+				const tiles = [];
+				for (let ny = 0; ny < patternWidth; ny++) {
+				// Ny and Nx refer to the 1st and 2nd N in NxN
+					tiles[ny] = [];
+					for (let nx = 0; nx < patternWidth; nx++) {
+						// using modulo to loop around an array in order to avoid going out of bounds
+						// relearned this pattern from https://banjocode.com/post/javascript/iterate-array-with-modulo
+						tiles[ny][nx] = inputImageMatrix[(y + ny) % inputImageMatrix.length][(x + nx) % inputImageMatrix.length];
+					}
+				}
+				return tiles;
 			}
 
 			/**
