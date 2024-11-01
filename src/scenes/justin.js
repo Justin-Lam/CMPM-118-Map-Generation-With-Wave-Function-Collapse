@@ -10,11 +10,6 @@ class Justin extends Phaser.Scene
 		this.load.image("map pack", "mapPack_spritesheet.png");
 	}
 
-	debug()
-	{
-		
-	}
-
 	create()
 	{
 		// test input images
@@ -38,10 +33,22 @@ class Justin extends Phaser.Scene
 			[WATER,	WATER,	WATER],
 			[WATER,	WATER,	WATER]
 		];
+		const inputImageMatrix5 = [
+			[WATER,		WATER,		WATER],
+			[SAND_C,	SAND_C,		WATER],
+			[GRASS_C,	GRASS_C,	SAND_C],
+			[SAND_C,	SAND_C,		WATER]
+		];
+		
+		// input (change these to change the output)
 		const inputImageMatrix = inputImageMatrix1;
-		const N = 2;
+		const N = 1;
+	
+		// logic
+		const patterns = this.getPatterns(inputImageMatrix, N)
+		console.log(patterns);
 
-		// preview of the input image
+		// input image preview
 		const map = this.make.tilemap({
 			data: inputImageMatrix,
 			tileWidth: TILE_WIDTH,
@@ -50,17 +57,17 @@ class Justin extends Phaser.Scene
 		const tileset = map.addTilesetImage("map pack");
 		const layer = map.createLayer(0, tileset, 0, 0);
 
-		// preview of the patterns derived from the input image
+		// patterns and adjacencies preview
 		let patternMap = null;
 		let adjacenciesMap = null;
-		let i = -1;
+		let patternIndex = -1;
 		this.debugKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
 		this.debugKey.on("down", (key, event) => {
-			if (i+1 > WFC.patterns.length-1) {
+			if (patternIndex+1 > patterns.length-1) {
 				console.log("no more patterns to see");
 				return;
 			}
-			i++;
+			patternIndex++;
 			if (patternMap) {
 				patternMap.destroy();
 			}
@@ -68,23 +75,22 @@ class Justin extends Phaser.Scene
 				adjacenciesMap.destroy();
 			}
 			patternMap = this.make.tilemap({
-				data: WFC.patterns[i].tiles,
+				data: patterns[patternIndex].tiles,
 				tileWidth: TILE_WIDTH,
 				tileHeight: TILE_WIDTH
 			});
 			const patternLayer = patternMap.createLayer(0, tileset, TILE_WIDTH*4, 0);
-
 			const adjacenciesData = [];
 			for (let i = 0; i < 4*N + 3; i++) {
 				adjacenciesData[i] = [];
 			}
-			WFC.patterns[i].adjacencies.forEach(adjacency => {
+			patterns[patternIndex].adjacencies.forEach(adjacency => {
 				switch (adjacency.direction) {
 					case UP:
 						for (let i = 0; i < N; i++) {
 							adjacenciesData[i].push(BLANK);
 							for (let j = 0; j < N; j++) {
-								adjacenciesData[i].push(WFC.patterns[adjacency.index].tiles[i][j]);
+								adjacenciesData[i].push(patterns[adjacency.index].tiles[i][j]);
 							}
 						}
 						break;
@@ -92,7 +98,7 @@ class Justin extends Phaser.Scene
 						for (let i = 0; i < N; i++) {
 							adjacenciesData[i+N+1].push(BLANK);
 							for (let j = 0; j < N; j++) {
-								adjacenciesData[i+N+1].push(WFC.patterns[adjacency.index].tiles[i][j]);
+								adjacenciesData[i+N+1].push(patterns[adjacency.index].tiles[i][j]);
 							}
 						}
 						break;
@@ -100,7 +106,7 @@ class Justin extends Phaser.Scene
 						for (let i = 0; i < N; i++) {
 							adjacenciesData[i+2*(N+1)].push(BLANK);
 							for (let j = 0; j < N; j++) {
-								adjacenciesData[i+2*(N+1)].push(WFC.patterns[adjacency.index].tiles[i][j]);
+								adjacenciesData[i+2*(N+1)].push(patterns[adjacency.index].tiles[i][j]);
 							}
 						}
 						break;
@@ -108,7 +114,7 @@ class Justin extends Phaser.Scene
 						for (let i = 0; i < N; i++) {
 							adjacenciesData[i+3*(N+1)].push(BLANK);
 							for (let j = 0; j < N; j++) {
-								adjacenciesData[i+3*(N+1)].push(WFC.patterns[adjacency.index].tiles[i][j]);
+								adjacenciesData[i+3*(N+1)].push(patterns[adjacency.index].tiles[i][j]);
 							}
 						}
 						break;
@@ -123,32 +129,20 @@ class Justin extends Phaser.Scene
 				tileHeight: TILE_WIDTH
 			});
 			const adjacenciesLayer = adjacenciesMap.createLayer(0, tileset, TILE_WIDTH*4 + TILE_WIDTH*N, 0);
-
 		});
-
-
-		// Logic
-		this.processInput(inputImageMatrix, N);
-		console.log(WFC.patterns.length + " unique patterns");
-		console.log(WFC.patterns);
 	}
 
-	/**
-	 * Processes the input to get necessary pattern data for running the constraint solver. Records this data in the global WFC object.
-	 * @param {number[][]} inputImageMatrix the data representation of the input image as a 2D array of tile IDs
-	 * @param {number} patternWidth N (as in NxN)
-	 */
-	processInput(inputImageMatrix, patternWidth)
+	getPatterns(inputImageMatrix, patternWidth)
 	{
 		ensureValidInput();
-		let patterns = createPatterns(inputImageMatrix.length, inputImageMatrix[0].length);
-		getTiles(patterns, inputImageMatrix.length, inputImageMatrix[0].length, patternWidth);
-		patterns = getWeights(patterns);	// will remove any duplicate patterns hence the reassignment
+		let patterns = createEmptyPatterns(inputImageMatrix.length, inputImageMatrix[0].length);
+		getTiles(patterns);
+		patterns = getWeights(patterns);	// getWeights() returns a new array without duplicate patterns so we need to reassign
 		getAdjacencies(patterns);
-		WFC.patterns = patterns;
+		return patterns;
 
 
-		/** Ensures that the input to processInput() is valid. */
+		/** Ensures that the input to getPatterns() is valid. */
 		function ensureValidInput()
 		{
 			if (inputImageMatrix.length < 1) {
@@ -165,11 +159,14 @@ class Justin extends Phaser.Scene
 			}
 		}
 
-		function createPatterns()
+		/**
+		 * Creates a list of empty pattern objects. The amount of patterns created is the same as the amount of tiles in the input image.
+		 * @returns {{}[]} a list of pattern objects
+		 */
+		function createEmptyPatterns()
 		{
 			const patterns = [];
-			const numPatterns = inputImageMatrix.length * inputImageMatrix[0].length;		// number of patterns is the same as number of tiles
-			for (let i = 0; i < numPatterns; i++) {
+			for (let i = 0; i < inputImageMatrix.length * inputImageMatrix[0].length; i++) {
 				patterns[i] = {
 					tiles: [],
 					adjacencies: [],
@@ -179,13 +176,19 @@ class Justin extends Phaser.Scene
 			return patterns;
 		}
 
+		/**
+		 * Populates the tiles attribute for each pattern in patterns.
+		 * @param {{}[]} patterns  a list of pattern objects
+		 */
 		function getTiles(patterns)
 		{
+			// Loop over each tile in the input image because a pattern corresponds to each
 			for (let y = 0; y < inputImageMatrix.length; y++) {
 				for (let x = 0; x < inputImageMatrix[0].length; x++) {
+					// Loop over each tile in the corresponding pattern
+					// ny and nx refer to the 1st and 2nd N in NxN
 					const tiles = [];
 					for (let ny = 0; ny < patternWidth; ny++) {
-					// Ny and Nx refer to the 1st and 2nd N in NxN
 						tiles[ny] = [];
 						for (let nx = 0; nx < patternWidth; nx++) {
 							// using modulo to loop around an array in order to avoid going out of bounds
@@ -193,21 +196,32 @@ class Justin extends Phaser.Scene
 							tiles[ny][nx] = inputImageMatrix[(y + ny) % inputImageMatrix.length][(x + nx) % inputImageMatrix.length];
 						}
 					}
-					patterns[y * inputImageMatrix.length + x].tiles = tiles;
+					patterns[y * inputImageMatrix.length + x].tiles = tiles;	// we're converting from 2D array position (y, x) to 1D array position (i) here
 				}
 			}
 		}
 
-		function patternsAreEqual(pattern1, pattern2)
+		/**
+		 * Checks if two patterns have the same tiles.
+		 * @param {{}} pattern1 a pattern object
+		 * @param {{}} pattern2 a pattern object
+		 * @returns {boolean} true if the two patterns have the same tiles, and false if not
+		 */
+		function patternsHaveSameTiles(pattern1, pattern2)
 		{
 			return pattern1.tiles.every((row, y) => row.every((tile, x) => tile == pattern2.tiles[y][x]));
 		}
 
+		/**
+		 * Populates the weight attribute for each unique pattern in patterns and removes their duplicates.
+		 * @param {{}} patterns a list of pattern objects
+		 * @returns {{}[]} a list of pattern objects
+		 */
 		function getWeights(patterns)
 		{
 			const uniquePatterns = [patterns[0]];
 			for (let i = 1; i < patterns.length; i++) {
-				const index = uniquePatterns.findIndex(uniquePattern => patternsAreEqual(patterns[i], uniquePattern));
+				const index = uniquePatterns.findIndex(uniquePattern => patternsHaveSameTiles(patterns[i], uniquePattern));
 				if (index == -1) {
 					uniquePatterns.push(patterns[i]);
 				}
@@ -218,14 +232,21 @@ class Justin extends Phaser.Scene
 			return uniquePatterns;
 		}
 
+		/**
+		 * Populates the adjacencies attribute for each pattern in patterns.
+		 * @param {{}[]}} a list of pattern objects
+		 */
 		function getAdjacencies(patterns)
 		{
+			// Loop over each pattern
 			for (let i = 0; i < patterns.length; i++) {
+				// For each pattern, loop over each other pattern (patterns cannot be adjacent to themselves)
 				for (let j = 0; j < patterns.length; j++) {
-					if (patternsAreEqual(patterns[i], patterns[j])) {
+					if (i == j) {
 						continue;
 					}
 					else {
+						// For each other pattern, loop over each direction, checking for adjacency
 						DIRECTIONS.forEach(dir => {
 							if (isAdjacent(patterns[i], patterns[j], dir)) {
 								patterns[i].adjacencies.push({
@@ -238,12 +259,18 @@ class Justin extends Phaser.Scene
 				}
 			}
 
-			// pattern2 is adjacent to pattern1 in direction
+			/**
+			 * Checks if pattern2 is adjacent to pattern1 in a direction.
+			 * @param {{}} pattern1 a pattern object
+			 * @param {{}} pattern2 a pattern object
+			 * @param {[number, number]} direction a 2D vector
+			 * @returns {boolean} true if pattern2 is adjacent to pattern1 in the direction, and false if not
+			 */
 			function isAdjacent(pattern1, pattern2, direction)
 			{
 				switch (direction) {
 					case UP:
-						// Compare everything but the bottom row of pattern1 with everything but the top row of pattern2
+						// Compare the overlap between everything but the bottom row of pattern1 with everything but the top row of pattern2
 						for (let y = 0; y < patternWidth-1; y++) {
 							for (let x = 0; x < patternWidth; x++) {
 								if (pattern1.tiles[y][x] != pattern2.tiles[y+1][x]) {
@@ -253,7 +280,7 @@ class Justin extends Phaser.Scene
 						}
 						break;
 					case DOWN:
-						// Compare everything but the top row of pattern1 with everything but the bottom row of pattern2
+						// Compare the overlap between everything but the top row of pattern1 with everything but the bottom row of pattern2
 						for (let y = 1; y < patternWidth; y++) {
 							for (let x = 0; x < patternWidth; x++) {
 								if (pattern1.tiles[y][x] != pattern2.tiles[y-1][x]) {
@@ -263,7 +290,7 @@ class Justin extends Phaser.Scene
 						}
 						break;
 					case LEFT:
-						// Compare everything but the right column of pattern1 with everything but the left column of pattern2
+						// Compare the overlap between everything but the right column of pattern1 with everything but the left column of pattern2
 						for (let y = 0; y < patternWidth; y++) {
 							for (let x = 0; x < patternWidth-1; x++) {
 								if (pattern1.tiles[y][x] != pattern2.tiles[y][x+1]) {
@@ -273,7 +300,7 @@ class Justin extends Phaser.Scene
 						}
 						break;
 					case RIGHT:
-						// Compare right column of pattern1 with left column of pattern2
+						// Compare the overlap between everything but left column of pattern1 with everything but the right column of pattern2
 						for (let y = 0; y < patternWidth; y++) {
 							for (let x = 1; x < patternWidth; x++) {
 								if (pattern1.tiles[y][x] != pattern2.tiles[y][x-1]) {
@@ -286,82 +313,8 @@ class Justin extends Phaser.Scene
 						throw new Error("Default switch case occurred.");					
 				}
 
+				// If we're here then the overlap was the same meaning the two patterns are adjacent, so return true
 				return true;
-			}
-		}
-
-
-
-		/**
-		 * Iterates over each tile in the input image matrix, making a pattern for each.
-		 * @returns {{}[]} an array of unqiue pattern objects
-		 */
-		function createPatterns2()
-		{
-			const patterns = [];
-			for (let y = 0; y < inputImageMatrix.length; y++) {
-				for (let x = 0; x < inputImageMatrix[0].length; x++) {
-					const pattern = createPattern(y, x);
-					const index = getPatternIndex(pattern, patterns);
-					if (index == -1) {
-						patterns.push(pattern);
-					}
-					else {
-						patterns[index].weight++;
-					}
-				}
-			}
-			return patterns;
-
-
-			/**
-			 * Creates a pattern.
-			 * @param {number} y the y position of the top left tile of the pattern in the input image
-			 * @param {number} x the x position of the top left tile of the pattern in the input image
-			 * @returns {{}} a pattern object
-			 */
-			function createPattern(y, x)
-			{
-				return {
-					tiles: getTiles(y, x),
-					adjacencies: [],
-					weight: 1
-				};
-
-				
-				/**
-				 * Returns the tiles of a pattern.
-				 * @param {number} y the y position of the top left tile of the pattern in the input image
-				 * @param {number} x the x position of the top left tile of the pattern in the input image
-				 * @returns {number[][]} a 2D array of tile IDs
-				 */
-				function getTiles(y, x)
-				{
-					const tiles = [];
-					for (let ny = 0; ny < patternWidth; ny++) {
-					// Ny and Nx refer to the 1st and 2nd N in NxN
-						tiles[ny] = [];
-						for (let nx = 0; nx < patternWidth; nx++) {
-							// using modulo to loop around an array in order to avoid going out of bounds
-							// relearned this pattern from https://banjocode.com/post/javascript/iterate-array-with-modulo
-							tiles[ny][nx] = inputImageMatrix[(y + ny) % inputImageMatrix.length][(x + nx) % inputImageMatrix.length];
-						}
-					}
-					return tiles;
-				}
-			}
-
-			/**
-			 * Finds the index of a pattern in an array of patterns by comparing tiles.
-			 * @param {{}} pattern the pattern to check
-			 * @param {{}[]} patterns an array of patterns
-			 * @returns {number} the index at which pattern is in patterns if true, or -1 if false
-			 */
-			function getPatternIndex(pattern, patterns)
-			{
-				// learned about findIndex() and every() from ChatGPT when asking it to refactor my old code for this function
-				// find the index at which the input pattern matches with an element in patterns; determine a match by comparing tiles
-				return patterns.findIndex(patternElem => pattern.tiles.every((row, y) => row.every((tile, x) => tile == patternElem.tiles[y][x])));
 			}
 		}
 	}

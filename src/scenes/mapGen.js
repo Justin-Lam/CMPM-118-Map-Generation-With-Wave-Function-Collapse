@@ -10,7 +10,8 @@ class MapGen extends Phaser.Scene
 
 	preload()
 	{
-
+		this.load.path = './assets/';
+		this.load.image("map pack", "mapPack_spritesheet.png");
 	}
 
 	create()
