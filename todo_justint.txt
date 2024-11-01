@@ -9,6 +9,6 @@ let pattern = {
 }
 
 let adjacency = {
-	patternIndex: 3,
+	index: 3,
 	direction = [1, -1]
 }

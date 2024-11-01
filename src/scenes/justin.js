@@ -38,7 +38,8 @@ class Justin extends Phaser.Scene
 			[WATER,	WATER,	WATER],
 			[WATER,	WATER,	WATER]
 		];
-		const inputImageMatrix = inputImageMatrix2;
+		const inputImageMatrix = inputImageMatrix1;
+		const N = 2;
 
 		// preview of the input image
 		const map = this.make.tilemap({
@@ -51,6 +52,7 @@ class Justin extends Phaser.Scene
 
 		// preview of the patterns derived from the input image
 		let patternMap = null;
+		let adjacenciesMap = null;
 		let i = -1;
 		this.debugKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
 		this.debugKey.on("down", (key, event) => {
@@ -62,17 +64,71 @@ class Justin extends Phaser.Scene
 			if (patternMap) {
 				patternMap.destroy();
 			}
+			if (adjacenciesMap) {
+				adjacenciesMap.destroy();
+			}
 			patternMap = this.make.tilemap({
 				data: WFC.patterns[i].tiles,
 				tileWidth: TILE_WIDTH,
 				tileHeight: TILE_WIDTH
 			});
 			const patternLayer = patternMap.createLayer(0, tileset, TILE_WIDTH*4, 0);
+
+			const adjacenciesData = [];
+			for (let i = 0; i < 4*N + 3; i++) {
+				adjacenciesData[i] = [];
+			}
+			WFC.patterns[i].adjacencies.forEach(adjacency => {
+				switch (adjacency.direction) {
+					case UP:
+						for (let i = 0; i < N; i++) {
+							adjacenciesData[i].push(BLANK);
+							for (let j = 0; j < N; j++) {
+								adjacenciesData[i].push(WFC.patterns[adjacency.index].tiles[i][j]);
+							}
+						}
+						break;
+					case DOWN:
+						for (let i = 0; i < N; i++) {
+							adjacenciesData[i+N+1].push(BLANK);
+							for (let j = 0; j < N; j++) {
+								adjacenciesData[i+N+1].push(WFC.patterns[adjacency.index].tiles[i][j]);
+							}
+						}
+						break;
+					case LEFT:
+						for (let i = 0; i < N; i++) {
+							adjacenciesData[i+2*(N+1)].push(BLANK);
+							for (let j = 0; j < N; j++) {
+								adjacenciesData[i+2*(N+1)].push(WFC.patterns[adjacency.index].tiles[i][j]);
+							}
+						}
+						break;
+					case RIGHT:
+						for (let i = 0; i < N; i++) {
+							adjacenciesData[i+3*(N+1)].push(BLANK);
+							for (let j = 0; j < N; j++) {
+								adjacenciesData[i+3*(N+1)].push(WFC.patterns[adjacency.index].tiles[i][j]);
+							}
+						}
+						break;
+					default:
+						console.log("default case called");
+						break;
+				}
+			});
+			adjacenciesMap = this.make.tilemap({
+				data: adjacenciesData,
+				tileWidth: TILE_WIDTH,
+				tileHeight: TILE_WIDTH
+			});
+			const adjacenciesLayer = adjacenciesMap.createLayer(0, tileset, TILE_WIDTH*4 + TILE_WIDTH*N, 0);
+
 		});
 
 
 		// Logic
-		this.processInput(inputImageMatrix, 2);
+		this.processInput(inputImageMatrix, N);
 		console.log(WFC.patterns.length + " unique patterns");
 		console.log(WFC.patterns);
 	}
@@ -182,52 +238,54 @@ class Justin extends Phaser.Scene
 				}
 			}
 
-
 			// pattern2 is adjacent to pattern1 in direction
 			function isAdjacent(pattern1, pattern2, direction)
 			{
-				const N = pattern1.tiles.length;  // Assuming NxN patterns
-
-				// Check for each direction
-				if (direction === UP) {
-					// Compare everything but the bottom row of pattern1 with everything but the top row of pattern2
-					for (let y = 0; y < patternWidth-1; y++) {
-						for (let x = 0; x < patternWidth; x++) {
-							if (pattern1.tiles[y][x] != pattern2.tiles[y+1][x]) {
-								return false;
+				switch (direction) {
+					case UP:
+						// Compare everything but the bottom row of pattern1 with everything but the top row of pattern2
+						for (let y = 0; y < patternWidth-1; y++) {
+							for (let x = 0; x < patternWidth; x++) {
+								if (pattern1.tiles[y][x] != pattern2.tiles[y+1][x]) {
+									return false;
+								}
 							}
 						}
-					}
-				} else if (direction === DOWN) {
-					// Compare everything but the top row of pattern1 with everything but the bottom row of pattern2
-					for (let y = 1; y < patternWidth; y++) {
-						for (let x = 0; x < patternWidth; x++) {
-							if (pattern1.tiles[y][x] != pattern2.tiles[y-1][x]) {
-								return false;
+						break;
+					case DOWN:
+						// Compare everything but the top row of pattern1 with everything but the bottom row of pattern2
+						for (let y = 1; y < patternWidth; y++) {
+							for (let x = 0; x < patternWidth; x++) {
+								if (pattern1.tiles[y][x] != pattern2.tiles[y-1][x]) {
+									return false;
+								}
 							}
 						}
-					}
-				} else if (direction === LEFT) {
-					// Compare everything but the right column of pattern1 with everything but the left column of pattern2
-					for (let y = 0; y < patternWidth; y++) {
-						for (let x = 0; x < patternWidth-1; x++) {
-							if (pattern1.tiles[y][x] != pattern2.tiles[y][x+1]) {
-								return false;
+						break;
+					case LEFT:
+						// Compare everything but the right column of pattern1 with everything but the left column of pattern2
+						for (let y = 0; y < patternWidth; y++) {
+							for (let x = 0; x < patternWidth-1; x++) {
+								if (pattern1.tiles[y][x] != pattern2.tiles[y][x+1]) {
+									return false;
+								}
 							}
 						}
-					}
-				} else if (direction === RIGHT) {
-					// Compare right column of pattern1 with left column of pattern2
-					for (let y = 0; y < patternWidth; y++) {
-						for (let x = 1; x < patternWidth; x++) {
-							if (pattern1.tiles[y][x] != pattern2.tiles[y][x-1]) {
-								return false;
+						break;
+					case RIGHT:
+						// Compare right column of pattern1 with left column of pattern2
+						for (let y = 0; y < patternWidth; y++) {
+							for (let x = 1; x < patternWidth; x++) {
+								if (pattern1.tiles[y][x] != pattern2.tiles[y][x-1]) {
+									return false;
+								}
 							}
 						}
-					}
+						break;
+					default:
+						throw new Error("Default switch case occurred.");					
 				}
 
-				// All tiles on the edge match
 				return true;
 			}
 		}
