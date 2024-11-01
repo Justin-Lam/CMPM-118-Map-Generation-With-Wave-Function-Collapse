@@ -3,6 +3,7 @@ const OUTPUT_MAP_WIDTH = 20;		// (of a map) width in tiles
 const TILE_WIDTH = 64;				// (of a tile) width in pixels
 const MAX_ATTEMPTS = 10;
 
+// Directions:
 const UP = [0, -1];
 const DOWN = [0, 1];
 const LEFT = [-1, 0];
@@ -43,8 +44,3 @@ const DIRT_TM = 190;
 const DIRT_TL = 9;
 const DIRT_RM = 161;
 const DIRT_LM = 189;
-
-// WFC Data Structures
-const WFC = {
-	patterns: []
-};

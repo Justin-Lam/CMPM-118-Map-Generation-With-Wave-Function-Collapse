@@ -137,6 +137,12 @@ class Justin extends Phaser.Scene
 		});
 	}
 
+	/**
+	 * Processes the input image to get its patterns.
+	 * @param {number[][]} inputImageMatrix the data representation of the input image as a 2D array of tile IDs
+	 * @param {number} patternWidth N (as in NxN)
+	 * @returns {{ tiles: number[][], adjacencies: [{ index: number, direction: [number, number] }], weight: number }[]} a list of patterns
+	 */
 	getPatterns(inputImageMatrix, patternWidth)
 	{
 		ensureValidInput();
