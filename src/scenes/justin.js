@@ -38,7 +38,7 @@ class Justin extends Phaser.Scene
 			[WATER,	WATER,	WATER],
 			[WATER,	WATER,	WATER]
 		];
-		const inputImageMatrix = inputImageMatrix1;
+		const inputImageMatrix = inputImageMatrix2;
 
 		// preview of the input image
 		const map = this.make.tilemap({
@@ -74,6 +74,7 @@ class Justin extends Phaser.Scene
 		// Logic
 		this.processInput(inputImageMatrix, 2);
 		console.log(WFC.patterns.length + " unique patterns");
+		console.log(WFC.patterns);
 	}
 
 	/**
@@ -84,7 +85,11 @@ class Justin extends Phaser.Scene
 	processInput(inputImageMatrix, patternWidth)
 	{
 		ensureValidInput();
-		WFC.patterns = createPatterns();
+		let patterns = createPatterns(inputImageMatrix.length, inputImageMatrix[0].length);
+		getTiles(patterns, inputImageMatrix.length, inputImageMatrix[0].length, patternWidth);
+		patterns = getWeights(patterns);	// will remove any duplicate patterns hence the reassignment
+		getAdjacencies(patterns);
+		WFC.patterns = patterns;
 
 
 		/** Ensures that the input to processInput() is valid. */
@@ -104,11 +109,136 @@ class Justin extends Phaser.Scene
 			}
 		}
 
+		function createPatterns()
+		{
+			const patterns = [];
+			const numPatterns = inputImageMatrix.length * inputImageMatrix[0].length;		// number of patterns is the same as number of tiles
+			for (let i = 0; i < numPatterns; i++) {
+				patterns[i] = {
+					tiles: [],
+					adjacencies: [],
+					weight: 1
+				};
+			}
+			return patterns;
+		}
+
+		function getTiles(patterns)
+		{
+			for (let y = 0; y < inputImageMatrix.length; y++) {
+				for (let x = 0; x < inputImageMatrix[0].length; x++) {
+					const tiles = [];
+					for (let ny = 0; ny < patternWidth; ny++) {
+					// Ny and Nx refer to the 1st and 2nd N in NxN
+						tiles[ny] = [];
+						for (let nx = 0; nx < patternWidth; nx++) {
+							// using modulo to loop around an array in order to avoid going out of bounds
+							// relearned this pattern from https://banjocode.com/post/javascript/iterate-array-with-modulo
+							tiles[ny][nx] = inputImageMatrix[(y + ny) % inputImageMatrix.length][(x + nx) % inputImageMatrix.length];
+						}
+					}
+					patterns[y * inputImageMatrix.length + x].tiles = tiles;
+				}
+			}
+		}
+
+		function patternsAreEqual(pattern1, pattern2)
+		{
+			return pattern1.tiles.every((row, y) => row.every((tile, x) => tile == pattern2.tiles[y][x]));
+		}
+
+		function getWeights(patterns)
+		{
+			const uniquePatterns = [patterns[0]];
+			for (let i = 1; i < patterns.length; i++) {
+				const index = uniquePatterns.findIndex(uniquePattern => patternsAreEqual(patterns[i], uniquePattern));
+				if (index == -1) {
+					uniquePatterns.push(patterns[i]);
+				}
+				else {
+					uniquePatterns[index].weight++;
+				}
+			}
+			return uniquePatterns;
+		}
+
+		function getAdjacencies(patterns)
+		{
+			for (let i = 0; i < patterns.length; i++) {
+				for (let j = 0; j < patterns.length; j++) {
+					if (patternsAreEqual(patterns[i], patterns[j])) {
+						continue;
+					}
+					else {
+						DIRECTIONS.forEach(dir => {
+							if (isAdjacent(patterns[i], patterns[j], dir)) {
+								patterns[i].adjacencies.push({
+									index: j,
+									direction: dir
+								});
+							}
+						});
+					}
+				}
+			}
+
+
+			// pattern2 is adjacent to pattern1 in direction
+			function isAdjacent(pattern1, pattern2, direction)
+			{
+				const N = pattern1.tiles.length;  // Assuming NxN patterns
+
+				// Check for each direction
+				if (direction === UP) {
+					// Compare everything but the bottom row of pattern1 with everything but the top row of pattern2
+					for (let y = 0; y < patternWidth-1; y++) {
+						for (let x = 0; x < patternWidth; x++) {
+							if (pattern1.tiles[y][x] != pattern2.tiles[y+1][x]) {
+								return false;
+							}
+						}
+					}
+				} else if (direction === DOWN) {
+					// Compare everything but the top row of pattern1 with everything but the bottom row of pattern2
+					for (let y = 1; y < patternWidth; y++) {
+						for (let x = 0; x < patternWidth; x++) {
+							if (pattern1.tiles[y][x] != pattern2.tiles[y-1][x]) {
+								return false;
+							}
+						}
+					}
+				} else if (direction === LEFT) {
+					// Compare everything but the right column of pattern1 with everything but the left column of pattern2
+					for (let y = 0; y < patternWidth; y++) {
+						for (let x = 0; x < patternWidth-1; x++) {
+							if (pattern1.tiles[y][x] != pattern2.tiles[y][x+1]) {
+								return false;
+							}
+						}
+					}
+				} else if (direction === RIGHT) {
+					// Compare right column of pattern1 with left column of pattern2
+					for (let y = 0; y < patternWidth; y++) {
+						for (let x = 1; x < patternWidth; x++) {
+							if (pattern1.tiles[y][x] != pattern2.tiles[y][x-1]) {
+								return false;
+							}
+						}
+					}
+				}
+
+				// All tiles on the edge match
+				return true;
+			}
+		}
+
+
+
 		/**
 		 * Iterates over each tile in the input image matrix, making a pattern for each.
 		 * @returns {{}[]} an array of unqiue pattern objects
 		 */
-		function createPatterns()
+		function createPatterns2()
 		{
 			const patterns = [];
 			for (let y = 0; y < inputImageMatrix.length; y++) {

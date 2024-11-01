@@ -6,11 +6,11 @@ const OUTPUT_MAP_WIDTH = 20;		// (of a map) width in tiles
 const TILE_WIDTH = 64;				// (of a tile) width in pixels
 const MAX_ATTEMPTS = 10;
 
-const DIRECTIONS = [UP, DOWN, LEFT, RIGHT];
 const UP = [0, -1];
 const DOWN = [0, 1];
 const LEFT = [-1, 0];
 const RIGHT = [1, 0];
+const DIRECTIONS = [UP, DOWN, LEFT, RIGHT];
 
 // Tile IDs:
 // C = "center", BR = "bottom right", LM = "left middle", TL = "top left", etc.
