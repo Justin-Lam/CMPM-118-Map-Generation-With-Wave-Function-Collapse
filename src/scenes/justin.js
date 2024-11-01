@@ -39,10 +39,15 @@ class Justin extends Phaser.Scene
 			[GRASS_C,	GRASS_C,	SAND_C],
 			[SAND_C,	SAND_C,		WATER]
 		];
+		const inputImageMatrix6 = [
+			[WATER,		WATER,		WATER,		WATER],
+			[SAND_C,	SAND_C,		WATER,		WATER],
+			[GRASS_C,	GRASS_C,	SAND_C,		WATER],
+		];
 		
 		// input (change these to change the output)
 		const inputImageMatrix = inputImageMatrix1;
-		const N = 1;
+		const N = 2;
 	
 		// logic
 		const patterns = this.getPatterns(inputImageMatrix, N)
@@ -79,7 +84,7 @@ class Justin extends Phaser.Scene
 				tileWidth: TILE_WIDTH,
 				tileHeight: TILE_WIDTH
 			});
-			const patternLayer = patternMap.createLayer(0, tileset, TILE_WIDTH*4, 0);
+			const patternLayer = patternMap.createLayer(0, tileset, TILE_WIDTH*(inputImageMatrix[0].length+1), 0);
 			const adjacenciesData = [];
 			for (let i = 0; i < 4*N + 3; i++) {
 				adjacenciesData[i] = [];
@@ -119,7 +124,7 @@ class Justin extends Phaser.Scene
 						}
 						break;
 					default:
-						console.log("default case called");
+						throw new Error("Default switch case occurred.");
 						break;
 				}
 			});
@@ -128,7 +133,7 @@ class Justin extends Phaser.Scene
 				tileWidth: TILE_WIDTH,
 				tileHeight: TILE_WIDTH
 			});
-			const adjacenciesLayer = adjacenciesMap.createLayer(0, tileset, TILE_WIDTH*4 + TILE_WIDTH*N, 0);
+			const adjacenciesLayer = adjacenciesMap.createLayer(0, tileset, TILE_WIDTH*(inputImageMatrix[0].length+1) + TILE_WIDTH*N, 0);
 		});
 	}
 
@@ -146,16 +151,19 @@ class Justin extends Phaser.Scene
 		function ensureValidInput()
 		{
 			if (inputImageMatrix.length < 1) {
-				throw new Error("Input image height is less than or equal to 0. Can't have an image with no height!");
+				throw new Error("Input image height is less than 1.");
 			}
 			if (inputImageMatrix[0].length < 1) {
-				throw new Error("Input image width is less than or equal to 0. Can't have an image with no width!");
+				throw new Error("Input image width is less than 1.");
 			}
-			if (patternWidth < 1) {
-				throw new Error("Pattern width is less than or equal to 0. Can't have a pattern made of 0x0, (-1)x(-1) tiles, etc!");
+			if (patternWidth < 2) {
+				throw new Error("Pattern width is less than 2.");
 			}
 			if (patternWidth > inputImageMatrix.length) {
-				throw new Error("Pattern width is greater than input image width. Can't have a image made of patterns that are larger than it!");
+				throw new Error("Pattern width exceeds input image height.");
+			}
+			if (patternWidth > inputImageMatrix[0].length) {
+				throw new Error("Pattern width exceeds input image width.");
 			}
 		}
 
@@ -193,10 +201,10 @@ class Justin extends Phaser.Scene
 						for (let nx = 0; nx < patternWidth; nx++) {
 							// using modulo to loop around an array in order to avoid going out of bounds
 							// relearned this pattern from https://banjocode.com/post/javascript/iterate-array-with-modulo
-							tiles[ny][nx] = inputImageMatrix[(y + ny) % inputImageMatrix.length][(x + nx) % inputImageMatrix.length];
+							tiles[ny][nx] = inputImageMatrix[(y + ny) % inputImageMatrix.length][(x + nx) % inputImageMatrix[0].length];
 						}
 					}
-					patterns[y * inputImageMatrix.length + x].tiles = tiles;	// we're converting from 2D array position (y, x) to 1D array position (i) here
+					patterns[y * inputImageMatrix[0].length + x].tiles = tiles;	// we're converting from 2D array position (y, x) to 1D array position (i) here
 				}
 			}
 		}
