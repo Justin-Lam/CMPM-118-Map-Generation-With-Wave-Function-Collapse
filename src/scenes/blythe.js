@@ -28,7 +28,6 @@ class Blythe extends Phaser.Scene
 		this.clear(this.patterns);
 
 		this.failedAttempts = 0;
-		this.isSolved = false;
 
 		// create a stack for use in propagate()
 		this.stack = [];
@@ -81,7 +80,9 @@ class Blythe extends Phaser.Scene
 				{
 					cells[y] = {
 						possiblePatterns: boolList,
-						entropy: maxEntropy
+						entropy: maxEntropy,
+						row: x,
+						col: y
 					};
 				}
 				waveMatrixTemp[x] = cells;
@@ -91,7 +92,7 @@ class Blythe extends Phaser.Scene
 
 	constraintSolver()
 	{
-		while (!this.isSolved)
+		while (!this.isSolved())
 		{
 			if (this.failedAttempts < MAX_ATTEMPTS)
 			{
@@ -101,6 +102,13 @@ class Blythe extends Phaser.Scene
 			this.observe();
 			this.propagate();
 		}
+
+		this.render();
+	}
+
+	isSolved()
+	{
+		return false;
 	}
 
 	clear()
@@ -120,11 +128,6 @@ class Blythe extends Phaser.Scene
 		// decrements entropy value of the cell
 		this.waveMatrix[x][y].entropy -= this.patterns[x].weight;
 	}
-
-	randomNum()
-	{
-        return Math.floor(Math.random() * this.patterns.length)
-    }
 
 	observe()
 	{
@@ -163,15 +166,62 @@ class Blythe extends Phaser.Scene
 
 	propagate()
 	{
+		// check adjacent cells' patterns (cells right next to that cell)
+		// if they're not in the adjacency list of the pattern(s) of the cell
+		// then set the possiblePatterns indexes of cells to false
+		// then add the checked cell to the stack
+
 		while (this.stack.length > 0)
 		{
 			let cell = this.stack.pop();
 
-			// check adjacent cells' patterns (cells right next to that cell)
-			// then set the possiblePatterns indexes of cells to false
-			// if they're not in the adjacency list of the pattern(s) of the cell
-			// then add the checked cell to the stack
+			// up adjacent cell
+			if (cell.row > 0)
+			{
+				let up = this.waveMatrix[row - 1][col];
+				this.propagateHelper(cell, up);
+				this.stack.push(up);
+			}
 
+			// down adjacent cell
+			if (cell.row < this.waveMatrix.length - 1)
+			{
+				let down = this.waveMatrix[row + 1][col];
+				this.propagateHelper(cell, down);
+				this.stack.push(down);
+			}
+
+			// left adjacent cell
+			if (cell.col > 0)
+			{
+				let left = this.waveMatrix[row][col - 1];
+				this.propagateHelper(cell, left);
+				this.stack.push(left);
+			}
+
+			// right adjacent cell
+			if (cell.col < this.waveMatrix[0].length)
+			{
+				let right = this.waveMatrix[row][col + 1];
+				this.propagateHelper(cell, right);
+				this.stack.push(right);
+			}
+		}
+	}
+
+	propagateHelper(cell, adjCell)
+	{
+		let pattern = cell.possiblePatterns[0];
+
+		for (let i = 0; i < adjCell.possiblePatterns.length; i++)
+		{
+			if (adjCell.possiblePatterns[i] == true)
+			{
+				if (!this.patterns[i].adjacencies.includes(pattern, 0))
+				{
+					adjCell.possiblePatterns[i] = false;
+				}
+			}
 		}
 	}
 
