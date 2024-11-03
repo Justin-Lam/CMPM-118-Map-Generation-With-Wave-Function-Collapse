@@ -159,6 +159,7 @@ class Blythe extends Phaser.Scene
 				ban(minX, minY, z);
 			}
 		}
+		return selected_pattern;
 	}
 
 	propagate()
