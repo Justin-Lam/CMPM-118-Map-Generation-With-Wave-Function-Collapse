@@ -30,9 +30,6 @@ class Blythe extends Phaser.Scene
 		this.failedAttempts = 0;
 		this.isSolved = false;
 
-		// set random seed here
-
-
 		// solve with the constraint solver
 		this.constraintSolver();
 	}
@@ -50,7 +47,7 @@ class Blythe extends Phaser.Scene
 			{
 				for (let y = 0; y < OUTPUT_MAP_WIDTH; y++)
 				{
-					maxEntropy += this.patternsList[x][y].weight;
+					maxEntropy += this.patterns[x][y].weight;
 				}
 			}
 
@@ -61,7 +58,7 @@ class Blythe extends Phaser.Scene
 		{
 			let boolList = [];
 
-			for (let x = 0; x < this.patternsList.length; x++)
+			for (let x = 0; x < this.patterns.length; x++)
 			{
 				boolList[x] = true;
 			}
@@ -78,7 +75,7 @@ class Blythe extends Phaser.Scene
 				for (let y = 0; y < OUTPUT_MAP_WIDTH; y++) 
 				{
 					cells[y] = {
-						possiblePatterns: [],
+						possiblePatterns: boolList,
 						entropy: this.maxEntropy
 					};
 				}
@@ -108,7 +105,7 @@ class Blythe extends Phaser.Scene
 		{
 			for (let y = 0; y < OUTPUT_MAP_WIDTH; y++)
 			{
-				for (let z = 0; z < this.patternsList.length; z++)
+				for (let z = 0; z < this.patterns.length; z++)
 				{
 					this.waveMatrix[x][y][z] = true;
 					// change to this.waveMatrix[x][y].possiblePatterns[z]
@@ -132,8 +129,13 @@ class Blythe extends Phaser.Scene
 		this.waveMatrix[x][y][z] = false;
 
 		// decrements entropy value of the cell
-		this.entropyList[x][y] -= this.patternsList[x][y].weight;
+		this.entropyList[x][y] -= this.patterns[x][y].weight;
 	}
+
+	randomNum()
+	{
+        return Math.floor(Math.random() * this.patterns.length)
+    }
 
 	observe()
 	{
