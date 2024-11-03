@@ -94,7 +94,7 @@ class Blythe extends Phaser.Scene
 	{
 		while (!this.isSolved())
 		{
-			if (this.failedAttempts < MAX_ATTEMPTS)
+			if (this.failedAttempts >= MAX_ATTEMPTS)
 			{
 				throw new Error("FAILURE: max attempts reached");
 			}
