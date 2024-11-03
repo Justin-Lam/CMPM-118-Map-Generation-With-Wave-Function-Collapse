@@ -6,46 +6,85 @@ class Blythe extends Phaser.Scene
 
 	preload()
 	{
-
+		this.load.path = './assets/';
+		this.load.image("map pack", "mapPack_spritesheet.png");
 	}
 
 	create()
 	{
+		this.mapgen = new MapGen(this);
+
+		// set up map (for testing)
+		const inputImageMatrix = [
+			[WATER,		WATER,		WATER],
+			[SAND_C,	SAND_C,		WATER],
+			[GRASS_C,	GRASS_C,	SAND_C]
+		];
+		const N = 2;
+		this.mapgen.generateMap(inputImageMatrix, N);
+
 		// set up data types
-
-		const adjacencies = [
-			// array of Adjacency objects
-		];
-
-		this.patternsList = [
-			// filled with Pattern objects
-		];
-
-		this.waveMatrix = [
-			[[], [], []],
-		]; // 3D array of bools UPDATE: 2D array of Cell objects
-
-		this.entropyList = [
-			[],
-		]; // 2D array of ints UPDATE: to be incorporated into each Cell object
+		this.patterns = this.mapgen.getPatterns();
+		this.waveMatrix = this.getWaveMatrix();
 
 		this.failedAttempts = 0;
 		this.isSolved = false;
 
-		// find maximum possible entropy of a cell (to use in clear())
-		this.maxEntropy = 0;
-		for (let x = 0; x < OUTPUT_MAP_WIDTH; x++)
-		{
-			for (let y = 0; y < OUTPUT_MAP_WIDTH; y++)
-			{
-				this.maxEntropy += this.patternsList[x][y].weight;
-			}
-		}
-
 		// set random seed here
+
 
 		// solve with the constraint solver
 		this.constraintSolver();
+	}
+
+	getWaveMatrix()
+	{
+		let maxEntropy = getMaxEntropy();
+		let boolList = getAllPatterns();
+		createEmptyCells(maxEntropy, boolList);
+
+		// find maximum possible entropy of a cell (to use in clear() and wave matrix init)
+		function getMaxEntropy()
+		{
+			for (let x = 0; x < OUTPUT_MAP_WIDTH; x++)
+			{
+				for (let y = 0; y < OUTPUT_MAP_WIDTH; y++)
+				{
+					maxEntropy += this.patternsList[x][y].weight;
+				}
+			}
+
+			return maxEntropy;
+		}
+
+		function getAllPatterns()
+		{
+			let boolList = [];
+
+			for (let x = 0; x < this.patternsList.length; x++)
+			{
+				boolList[x] = true;
+			}
+
+			return boolList;
+		}
+
+		function createEmptyCells(maxEntropy, boolList)
+		{
+			for (let x = 0; x < OUTPUT_MAP_WIDTH; x++)
+			{
+				let cells = [];
+
+				for (let y = 0; y < OUTPUT_MAP_WIDTH; y++) 
+				{
+					cells[y] = {
+						possiblePatterns: [],
+						entropy: this.maxEntropy
+					};
+				}
+				this.waveMatrix[x] = cells;
+			}
+		}
 	}
 
 	constraintSolver()
@@ -72,6 +111,7 @@ class Blythe extends Phaser.Scene
 				for (let z = 0; z < this.patternsList.length; z++)
 				{
 					this.waveMatrix[x][y][z] = true;
+					// change to this.waveMatrix[x][y].possiblePatterns[z]
 				}
 			}
 		}
