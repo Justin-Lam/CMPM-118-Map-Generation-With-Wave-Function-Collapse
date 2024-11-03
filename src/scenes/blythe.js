@@ -134,7 +134,7 @@ class Blythe extends Phaser.Scene
 		// look for lowest entropy that is not 1
 		// if lowest entropy is 0, call clear() and increment failedAttempts
 
-		let minEntropyCell = this.waveMatrix[0][0];
+		let minEntropy = this.waveMatrix[0][0].entropy;
 		let minX = 0;
 		let minY = 0;
 		for (let x = 0; x < this.waveMatrix.length; x++)
@@ -152,14 +152,14 @@ class Blythe extends Phaser.Scene
 
 		// choose random pattern in the cell (probability is affected by the pattern's weight)
 		let rand_pattern_num = Math.floor(Math.random() * this.waveMatrix[minX][minY].possiblePatterns.length)
-		let selected_pattern = this.waveMatrix[minX][minY].possiblePatterns[rand_pattern];
+		let selected_pattern = this.waveMatrix[minX][minY].possiblePatterns[rand_pattern_num];
 
 		// ban() all other patterns in the cell
 		for (let z = 0; z < this.waveMatrix[minX][minY].possiblePatterns.length; z++)
 		{
 			if (z != rand_pattern_num)
 			{
-				ban(minX, minY, z);
+				this.ban(minX, minY, z);
 			}
 		}
 		return selected_pattern;
