@@ -126,23 +126,34 @@ class Blythe extends Phaser.Scene
 		// if lowest entropy is 0, call clear() and increment failedAttempts
 		// MIGHT BE AN EXAMPLE OF WHY WE SHOULD MAKE CELL OBJECTS SINCE THIS NEEDS TO STORE THE CELL THAT HAS THE LEAST ENTROPY
 
-		let minEntropy = maxEntropy;
-		let lowestEntropyCells = [];
+		let minEntropyCell = this.waveMatrix[0][0];
+		let minX = 0;
+		let minY = 0;
 		for (let x = 0; x < this.waveMatrix.length; x++)
 		{
 			for (let y = 0; y < this.waveMatrix[x].length; y++)
 			{
 				if (this.waveMatrix[x][y].entropy < minEntropy)
 				{
-					minEntropy = this.waveMatrix[x][y][entropy];
+					minEntropy = this.waveMatrix[x][y].entropy;
+					minX = x;
+					minY = y;
 				}
 			}
 		}
 
 		// choose random pattern in the cell (probability is affected by the pattern's weight)
-		
+		let rand_pattern_num = Math.floor(Math.random() * this.waveMatrix[minX][minY].possiblePatterns.length)
+		let selected_pattern = this.waveMatrix[minX][minY].possiblePatterns[rand_pattern];
 
 		// ban() all other patterns in the cell
+		for (let z = 0; z < this.waveMatrix[minX][minY].possiblePatterns.length; z++)
+		{
+			if (z != rand_pattern_num)
+			{
+				ban(minX, minY, z);
+			}
+		}
 	}
 
 	propagate()
