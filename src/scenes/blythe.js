@@ -21,11 +21,12 @@ class Blythe extends Phaser.Scene
 			[GRASS_C,	GRASS_C,	SAND_C]
 		];
 		const N = 2;
-		this.mapgen.generateMap(inputImageMatrix, N);
 
 		// set up data types
-		this.patterns = this.mapgen.getPatterns();
-		this.waveMatrix = this.getWaveMatrix();
+		const patterns = this.mapgen.getPatterns(inputImageMatrix, N);
+		this.waveMatrix = this.getWaveMatrix(patterns);
+
+		console.log(this.waveMatrix);
 
 		this.failedAttempts = 0;
 		this.isSolved = false;
@@ -34,21 +35,23 @@ class Blythe extends Phaser.Scene
 		this.constraintSolver();
 	}
 
-	getWaveMatrix()
+	getWaveMatrix(patterns)
 	{
-		let maxEntropy = getMaxEntropy();
-		let boolList = getAllPatterns();
-		createEmptyCells(maxEntropy, boolList);
+		let maxEntropy = getMaxEntropy(patterns);
+		let boolList = getAllPatterns(patterns);
+		let waveMatrixTemp = [];
+		createEmptyCells(maxEntropy, boolList, waveMatrixTemp);
+
+		return waveMatrixTemp;
 
 		// find maximum possible entropy of a cell (to use in clear() and wave matrix init)
-		function getMaxEntropy()
+		function getMaxEntropy(patterns)
 		{
-			for (let x = 0; x < OUTPUT_MAP_WIDTH; x++)
+			let maxEntropy = 0;
+
+			for (let x = 0; x < patterns.length; x++)
 			{
-				for (let y = 0; y < OUTPUT_MAP_WIDTH; y++)
-				{
-					maxEntropy += this.patterns[x][y].weight;
-				}
+				maxEntropy += patterns[x].weight;
 			}
 
 			return maxEntropy;
@@ -58,7 +61,7 @@ class Blythe extends Phaser.Scene
 		{
 			let boolList = [];
 
-			for (let x = 0; x < this.patterns.length; x++)
+			for (let x = 0; x < patterns.length; x++)
 			{
 				boolList[x] = true;
 			}
@@ -66,7 +69,7 @@ class Blythe extends Phaser.Scene
 			return boolList;
 		}
 
-		function createEmptyCells(maxEntropy, boolList)
+		function createEmptyCells(maxEntropy, boolList, waveMatrixTemp)
 		{
 			for (let x = 0; x < OUTPUT_MAP_WIDTH; x++)
 			{
@@ -76,10 +79,10 @@ class Blythe extends Phaser.Scene
 				{
 					cells[y] = {
 						possiblePatterns: boolList,
-						entropy: this.maxEntropy
+						entropy: maxEntropy
 					};
 				}
-				this.waveMatrix[x] = cells;
+				waveMatrixTemp[x] = cells;
 			}
 		}
 	}
