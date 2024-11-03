@@ -23,10 +23,9 @@ class Blythe extends Phaser.Scene
 		const N = 2;
 
 		// set up data types
-		const patterns = this.mapgen.getPatterns(inputImageMatrix, N);
-		this.waveMatrix = this.getWaveMatrix(patterns);
-
-		console.log(this.waveMatrix);
+		this.waveMatrix = []; // wave matrix will be a 2d array of cell types
+		this.patterns = this.mapgen.getPatterns(inputImageMatrix, N);
+		this.clear(this.patterns);
 
 		this.failedAttempts = 0;
 		this.isSolved = false;
@@ -103,36 +102,17 @@ class Blythe extends Phaser.Scene
 
 	clear()
 	{
-		// sets all wave matrix values to true
-		for (let x = 0; x < OUTPUT_MAP_WIDTH; x++)
-		{
-			for (let y = 0; y < OUTPUT_MAP_WIDTH; y++)
-			{
-				for (let z = 0; z < this.patterns.length; z++)
-				{
-					this.waveMatrix[x][y][z] = true;
-					// change to this.waveMatrix[x][y].possiblePatterns[z]
-				}
-			}
-		}
-
-		// sets all entropy values to the max
-		for (let x = 0; x < OUTPUT_MAP_WIDTH; x++)
-		{
-			for (let y = 0; y < OUTPUT_MAP_WIDTH; y++)
-			{
-				this.entropyList[x][y] = this.maxEntropy;
-			}
-		}
+		this.waveMatrix = this.getWaveMatrix(this.patterns);
+		console.log(this.waveMatrix);
 	}
 
 	ban(x, y, z)
 	{
 		// sets corresponding wave matrix entry to false
-		this.waveMatrix[x][y][z] = false;
+		this.waveMatrix[x][y].possiblePatterns[z] = false;
 
 		// decrements entropy value of the cell
-		this.entropyList[x][y] -= this.patterns[x][y].weight;
+		this.waveMatrix[x][y].entropy -= this.patterns[x].weight;
 	}
 
 	randomNum()
@@ -148,11 +128,11 @@ class Blythe extends Phaser.Scene
 
 		let minEntropy = maxEntropy;
 		let lowestEntropyCells = [];
-		for (let x = 0; x < OUTPUT_MAP_WIDTH; x++)
+		for (let x = 0; x < this.waveMatrix.length; x++)
 		{
-			for (let y = 0; y < OUTPUT_MAP_WIDTH; y++)
+			for (let y = 0; y < this.waveMatrix[x].length; y++)
 			{
-				if (this.waveMatrix[x][y][entropy] < minEntropy)
+				if (this.waveMatrix[x][y].entropy < minEntropy)
 				{
 					minEntropy = this.waveMatrix[x][y][entropy];
 				}
