@@ -30,6 +30,9 @@ class Blythe extends Phaser.Scene
 		this.failedAttempts = 0;
 		this.isSolved = false;
 
+		// create a stack for use in propagate()
+		this.stack = [];
+
 		// solve with the constraint solver
 		this.constraintSolver();
 	}
@@ -110,6 +113,9 @@ class Blythe extends Phaser.Scene
 	{
 		// sets corresponding wave matrix entry to false
 		this.waveMatrix[x][y].possiblePatterns[z] = false;
+		
+		// adds the cell to the stack for propagation
+		this.stack[this.stack.length] = this.waveMatrix[x][y];
 
 		// decrements entropy value of the cell
 		this.waveMatrix[x][y].entropy -= this.patterns[x].weight;
@@ -124,7 +130,6 @@ class Blythe extends Phaser.Scene
 	{
 		// look for lowest entropy that is not 1
 		// if lowest entropy is 0, call clear() and increment failedAttempts
-		// MIGHT BE AN EXAMPLE OF WHY WE SHOULD MAKE CELL OBJECTS SINCE THIS NEEDS TO STORE THE CELL THAT HAS THE LEAST ENTROPY
 
 		let minEntropy = maxEntropy;
 		let lowestEntropyCells = [];
@@ -147,7 +152,16 @@ class Blythe extends Phaser.Scene
 
 	propagate()
 	{
+		while (this.stack.length > 0)
+		{
+			let cell = this.stack.pop();
 
+			// check adjacent cells' patterns (cells right next to that cell)
+			// then set the possiblePatterns indexes of cells to false
+			// if they're not in the adjacency list of the pattern(s) of the cell
+			// then add the checked cell to the stack
+
+		}
 	}
 
 	render()
