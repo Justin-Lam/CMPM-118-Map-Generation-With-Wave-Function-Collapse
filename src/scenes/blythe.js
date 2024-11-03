@@ -147,13 +147,14 @@ class Blythe extends Phaser.Scene
 		// MIGHT BE AN EXAMPLE OF WHY WE SHOULD MAKE CELL OBJECTS SINCE THIS NEEDS TO STORE THE CELL THAT HAS THE LEAST ENTROPY
 
 		let minEntropy = maxEntropy;
+		let lowestEntropyCells = [];
 		for (let x = 0; x < OUTPUT_MAP_WIDTH; x++)
 		{
 			for (let y = 0; y < OUTPUT_MAP_WIDTH; y++)
 			{
-				if (this.entropyList[x][y] < minEntropy)
+				if (this.waveMatrix[x][y][entropy] < minEntropy)
 				{
-					
+					minEntropy = this.waveMatrix[x][y][entropy];
 				}
 			}
 		}
