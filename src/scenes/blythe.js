@@ -175,11 +175,20 @@ class Blythe extends Phaser.Scene
 		while (this.stack.length > 0)
 		{
 			let cell = this.stack.pop();
+			console.log("cell: ");
+			console.log(cell);
 
 			// up adjacent cell
 			if (cell.row > 0)
 			{
-				let up = this.waveMatrix[row - 1][col];
+				let up = this.waveMatrix[cell.row - 1][cell.col];
+
+				if (up.entropy == 1)
+				{
+					break;
+				}
+
+				console.log("calling propagate for up adjacency");
 				this.propagateHelper(cell, up);
 				this.stack.push(up);
 			}
@@ -187,7 +196,14 @@ class Blythe extends Phaser.Scene
 			// down adjacent cell
 			if (cell.row < this.waveMatrix.length - 1)
 			{
-				let down = this.waveMatrix[row + 1][col];
+				let down = this.waveMatrix[cell.row + 1][cell.col];
+
+				if (down.entropy == 1)
+				{
+					break;
+				}
+
+				console.log("calling propagate for down adjacency");
 				this.propagateHelper(cell, down);
 				this.stack.push(down);
 			}
@@ -195,15 +211,29 @@ class Blythe extends Phaser.Scene
 			// left adjacent cell
 			if (cell.col > 0)
 			{
-				let left = this.waveMatrix[row][col - 1];
+				let left = this.waveMatrix[cell.row][cell.col - 1];
+
+				if (left.entropy == 1)
+				{
+					break;
+				}
+
+				console.log("calling propagate for left adjacency");
 				this.propagateHelper(cell, left);
 				this.stack.push(left);
 			}
 
 			// right adjacent cell
-			if (cell.col < this.waveMatrix[0].length)
+			if (cell.col < this.waveMatrix[0].length - 1)
 			{
-				let right = this.waveMatrix[row][col + 1];
+				let right = this.waveMatrix[cell.row][cell.col + 1];
+
+				if (right.entropy == 1)
+				{
+					break;
+				}
+				
+				console.log("calling propagate for right adjacency");
 				this.propagateHelper(cell, right);
 				this.stack.push(right);
 			}
@@ -212,7 +242,17 @@ class Blythe extends Phaser.Scene
 
 	propagateHelper(cell, adjCell)
 	{
-		let pattern = cell.possiblePatterns[0];
+		console.log(adjCell);
+		let patternIndex = 0;
+		for (let i = 0; i < cell.possiblePatterns.length; i++)
+		{
+			if (cell.possiblePatterns[i] == true)
+			{
+				patternIndex = i;
+			}
+		}
+		
+		let pattern = this.patterns[patternIndex];
 
 		for (let i = 0; i < adjCell.possiblePatterns.length; i++)
 		{
