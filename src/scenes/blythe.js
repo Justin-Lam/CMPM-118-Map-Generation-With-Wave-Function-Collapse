@@ -209,6 +209,7 @@ class Blythe extends Phaser.Scene
 		}
 
 		// choose random pattern in the cell (probability is affected by the pattern's weight)
+		// WEIGHTED RANDOM
 		let rand_pattern_num = Math.floor(Math.random() * this.waveMatrix[minX][minY].possiblePatterns.length)
 		// let selected_pattern = this.waveMatrix[minX][minY].possiblePatterns[rand_pattern_num];
 
@@ -333,6 +334,9 @@ class Blythe extends Phaser.Scene
 
 	render()
 	{
-
+		// loop through wave matrix
+		// for each cell in the wave matrix, store the id of the valid pattern (should only have one remaining)
+		// use the pattern id to get the pattern from the pattern array, this.patterns[id]
+		// each pattern object has a list of tile ids
 	}
 }
