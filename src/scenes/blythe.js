@@ -120,12 +120,19 @@ class Blythe extends Phaser.Scene
 				break;
 			}
 
-			this.observe();
+			if (this.observe() == 0)
+			{
+				console.log("FAILED ATTEMPT, TRYING AGAIN");
+				this.failedAttempts++;
+				this.clear();
+				continue;
+			}
 			if (this.propagate() == 0)
 			{
 				console.log("FAILED ATTEMPT, TRYING AGAIN");
 				this.failedAttempts++;
 				this.clear();
+				continue;
 			}
 			numLoops++;
 		}
@@ -211,8 +218,12 @@ class Blythe extends Phaser.Scene
 		{
 			for (let y = 0; y < this.waveMatrix[x].length; y++)
 			{
-				if (this.waveMatrix[x][y].entropy < minEntropy && this.waveMatrix[x][y].entropy > 1)
+				if (this.waveMatrix[x][y].entropy < minEntropy && this.waveMatrix[x][y].entropy != 1)
 				{
+					if (this.waveMatrix[x][y].entropy >= 0)
+					{
+						return 0;
+					}
 					minEntropy = this.waveMatrix[x][y].entropy;
 					minX = x;
 					minY = y;
@@ -275,6 +286,10 @@ class Blythe extends Phaser.Scene
 		{
 			console.log("stack length: " + this.stack.length);
 			let cell = this.stack.pop();
+			if (cell.entropy == 0)
+			{
+				return 0;
+			}
 			console.log("cell: ");
 			console.log(cell);
 			console.log("Patterns: " + cell.possiblePatterns);
