@@ -165,6 +165,7 @@ class Blythe extends Phaser.Scene
 	clear()
 	{
 		this.waveMatrix = this.getWaveMatrix(this.patterns);
+		console.log(this.waveMatrix);
 	}
 
 	printPatterns()
@@ -306,25 +307,25 @@ class Blythe extends Phaser.Scene
 	{
 		console.log("adjCell has row = " + adjCell.row + " col = " + adjCell.col);
 		console.log("adjCell patterns: " + adjCell.possiblePatterns);
-		let patternIndex = 0;
+		
+		// figure out pattern number(s)
+		let patternIndices = [];
 		for (let i = 0; i < cell.possiblePatterns.length; i++)
 		{
 			if (cell.possiblePatterns[i] == true)
 			{
-				patternIndex = i;
+				patternIndices[patternIndices.length] = i;
 			}
 		}
-		
-		//let pattern = this.patterns[patternIndex];
 
 		for (let i = 0; i < adjCell.possiblePatterns.length; i++)
 		{
 			if (adjCell.possiblePatterns[i] == true)
 			{
 				let hasPattern = false;
-				for (let j = 0; j < this.patterns[i].adjacencies.length; j++)
+				for (let j = 0; j < this.patterns[i].adjacencies.length; j++) // loop thru adjacencies
 				{
-					if (this.patterns[i].adjacencies[j].index == patternIndex && direction == this.patterns[i].adjacencies[j].direction)
+					if (patternIndices.includes(this.patterns[i].adjacencies[j].index) && direction == this.patterns[i].adjacencies[j].direction)
 					{
 						hasPattern = true;
 					}
