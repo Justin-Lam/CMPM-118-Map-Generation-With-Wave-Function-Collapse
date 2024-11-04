@@ -455,6 +455,21 @@ class Blythe extends Phaser.Scene
 				this.waveMatrix[x][y].id = tile_id;
 			}
 		}
+		let renderArray = Array.from({ length: TILEWIDTH }, () => Array(TILEWIDTH).fill(0));
+		for (let x = 0; x < this.waveMatrix.length; x++)
+		{
+			for (let y = 0; y < this.waveMatrix[x].length; x++)
+			{
+				renderArray[x][y] = this.waveMatrix[x][y].id;
+			}
+		}
+		const render = this.make.tilemap({
+            data: renderArray,
+            tileWidth: TILEWIDTH,
+            tileHeight: TILEWIDTH
+        })
+        const render_tilesheet = render.addTilesetImage("map pack");
+        const render_layer = render.createLayer(0, render_tilesheet, 0, 0);
 	}
 
 	
