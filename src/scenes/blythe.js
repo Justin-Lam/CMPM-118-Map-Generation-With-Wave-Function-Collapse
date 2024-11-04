@@ -99,7 +99,8 @@ class Blythe extends Phaser.Scene
 		let numLoops = 0;
 		while (1)
 		{
-			console.log(numLoops);
+			console.log("numLoops: " + numLoops);
+			console.log(this.failedAttempts);
 
 			if (this.failedAttempts >= MAX_ATTEMPTS)
 			{
@@ -119,7 +120,12 @@ class Blythe extends Phaser.Scene
 			}
 
 			this.observe();
-			this.propagate();
+			if (this.propagate() == 0)
+			{
+				console.log("FAILED ATTEMPT, TRYING AGAIN");
+				this.failedAttempts++;
+				this.clear();
+			}
 			numLoops++;
 		}
 
@@ -165,6 +171,7 @@ class Blythe extends Phaser.Scene
 	clear()
 	{
 		this.waveMatrix = this.getWaveMatrix(this.patterns);
+		this.stack = [];
 		console.log(this.waveMatrix);
 	}
 
@@ -183,12 +190,16 @@ class Blythe extends Phaser.Scene
 		// sets corresponding wave matrix entry to false
 		this.waveMatrix[x][y].possiblePatterns[z] = false;
 
+		this.stack.push(this.waveMatrix[x][y]);
+
 		// decrements entropy value of the cell
-		this.waveMatrix[x][y].entropy -= this.patterns[x].weight;
+		this.waveMatrix[x][y].entropy -= this.patterns[z].weight;
 	}
 
 	observe()
 	{
+
+		console.log("OBSERVING");
 		// look for lowest entropy that is not 1
 		// if lowest entropy is 0, call clear() and increment failedAttempts
 
@@ -250,10 +261,14 @@ class Blythe extends Phaser.Scene
 				{
 					break;
 				}
+				else if (up.entropy == 0)
+				{
+					return 0;
+				}
 
 				console.log("calling propagate for up adjacency");
 				this.propagateHelper(cell, up, UP);
-				this.stack.push(up);
+				//this.stack.push(up);
 			}
 
 			// down adjacent cell
@@ -265,10 +280,14 @@ class Blythe extends Phaser.Scene
 				{
 					break;
 				}
+				else if (down.entropy == 0)
+				{
+					return 0;
+				}
 
 				console.log("calling propagate for down adjacency");
 				this.propagateHelper(cell, down, DOWN);
-				this.stack.push(down);
+				//this.stack.push(down);
 			}
 
 			// left adjacent cell
@@ -280,10 +299,14 @@ class Blythe extends Phaser.Scene
 				{
 					break;
 				}
+				else if (left.entropy == 0)
+				{
+					return 0;
+				}
 
 				console.log("calling propagate for left adjacency");
 				this.propagateHelper(cell, left, LEFT);
-				this.stack.push(left);
+				//this.stack.push(left);
 			}
 
 			// right adjacent cell
@@ -295,12 +318,18 @@ class Blythe extends Phaser.Scene
 				{
 					break;
 				}
+				else if (right.entropy == 0)
+				{
+					return 0;
+				}
 				
 				console.log("calling propagate for right adjacency");
 				this.propagateHelper(cell, right, RIGHT);
-				this.stack.push(right);
+				//this.stack.push(right);
 			}
 		}
+
+		return 1;
 	}
 
 	propagateHelper(cell, adjCell, direction)
@@ -318,6 +347,27 @@ class Blythe extends Phaser.Scene
 			}
 		}
 
+		let patternAdjacencyIndices = [];
+
+		patternIndices.forEach(patternIndex => {
+			this.patterns[patternIndex].adjacencies.forEach(adjacency => {
+				if (adjacency.direction == direction) {
+					patternAdjacencyIndices.push(adjacency.index);
+				}
+			})
+		})
+
+		console.log(patternAdjacencyIndices);
+
+		for (let i = 0; i < adjCell.possiblePatterns.length; i++)
+		{
+			if (adjCell.possiblePatterns[i] == true && !patternAdjacencyIndices.includes(i))
+			{
+				this.ban(adjCell.row, adjCell.col, i);
+			}
+		}
+
+		/*
 		for (let i = 0; i < adjCell.possiblePatterns.length; i++)
 		{
 			if (adjCell.possiblePatterns[i] == true)
@@ -337,6 +387,7 @@ class Blythe extends Phaser.Scene
 				}
 			}
 		}
+		*/
 
 		console.log("adjCell NEW patterns: " + adjCell.possiblePatterns);
 	}
