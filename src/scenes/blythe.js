@@ -239,9 +239,6 @@ class Blythe extends Phaser.Scene
 
 		// choose random pattern in the cell (probability is affected by the pattern's weight)
 		// WEIGHTED RANDOM
-		//let pattern_index = Math.floor(Math.random() * this.waveMatrix[minX][minY].possiblePatterns.length)
-		// let selected_pattern = this.waveMatrix[minX][minY].possiblePatterns[rand_pattern_num];
-		//let pattern_index = Math.floor(Math.random() * this.waveMatrix[minX][minY].possiblePatterns.length)
 		// WEIGHTED RANDOM ALGORITHM (credits: https://dev.to/jacktt/understanding-the-weighted-random-algorithm-581p)
 		let total = 0;
 		for (let i = 0; i < this.patterns.length; i++) {
@@ -478,7 +475,7 @@ class Blythe extends Phaser.Scene
         for (var x = 0; x < this.TILEHEIGHT; x++) {
             for (var y = 0; y < this.TILEWIDTH; y++) {
                 if (this.getTileID(x, y) != WATER && Phaser.Math.FloatBetween(0, 100) < 20){
-                    decorArray[x][y] = 62; //tiny grass
+                    decorArray[x][y] = 62; //mushrooms
                 }
                 else{
                     decorArray[x][y] = 195; //transparent
