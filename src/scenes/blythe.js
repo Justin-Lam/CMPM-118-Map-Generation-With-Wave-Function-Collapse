@@ -72,7 +72,8 @@ class Blythe extends Phaser.Scene
 						possiblePatterns: [],
 						entropy: maxEntropy,
 						row: x,
-						col: y
+						col: y,
+						id: 0
 					};
 				}
 				waveMatrixTemp[x] = cells;
@@ -207,16 +208,37 @@ class Blythe extends Phaser.Scene
 			}
 		}
 
+		if (minEntropy == 0)
+		{
+			this.clear(this.patterns);
+			this.failedAttempts += 1;
+		}
+
 		// choose random pattern in the cell (probability is affected by the pattern's weight)
-		// WEIGHTED RANDOM
-		let rand_pattern_num = Math.floor(Math.random() * this.waveMatrix[minX][minY].possiblePatterns.length)
-		// let selected_pattern = this.waveMatrix[minX][minY].possiblePatterns[rand_pattern_num];
+		// WEIGHTED RANDOM ALGORITHM (credits: https://dev.to/jacktt/understanding-the-weighted-random-algorithm-581p)
+		let total = 0;
+		for (let i = 0; i < this.patterns.length; i++) {
+			total += this.patterns[i].weight;
+		}
+		const rand_weight = Math.ceil(Math.random() * total);
+		let selected_pattern;
+		let pattern_index;
+		let cursor = 0;
+		for (let i = 0; i < this.waveMatrix[minX][minY].possiblePatterns.length; i++)
+		{
+			cursor += this.patterns[i].weight;
+			if (cursor >= rand_weight)
+			{
+				selected_pattern = this.patterns[i];
+				pattern_index = i;
+			}
+		}
 
 		// ban() all other patterns in the cell
-		console.log("rand num: " + rand_pattern_num);
+		//console.log("rand num: " + rand_pattern_num);
 		for (let z = 0; z < this.waveMatrix[minX][minY].possiblePatterns.length; z++)
 		{
-			if (z != rand_pattern_num)
+			if (z != pattern_index)
 			{
 				this.ban(minX, minY, z);
 			}
@@ -346,14 +368,29 @@ class Blythe extends Phaser.Scene
 		// for each cell in the wave matrix, store the id of the valid pattern (should only have one remaining)
 		// use the pattern id to get the pattern from the pattern array, this.patterns[id]
 		// each pattern object has a list of tile ids
+		for (let x = 0; x < this.waveMatrix.length; x++)
+		{
+			for (let y = 0; y < this.waveMatrix[x].length; x++)
+			{
+				for(let i = 0; i < this.waveMatrix[x][y].possiblePatterns.length; i++)
+				{
+					if (this.waveMatrix[x][y].possiblePatterns[i] == true)
+					{
+						pattern_index = i;
+					}
+				}
+				let tile_id = this.patterns[pattern_index].tiles[0];
+				this.waveMatrix[x][y].id = tile_id;
+			}
+		}
 	}
 
-	/*
+	
 	addDecor(){
         let decorArray = Array.from({ length: TILEWIDTH }, () => Array(TILEWIDTH).fill(0));
         for (var x = 0; x < this.TILEHEIGHT; x++) {
             for (var y = 0; y < this.TILEWIDTH; y++) {
-                if (this.waveMatrix[x][y]. != WATER && Phaser.Math.FloatBetween(0, 100) < 20){
+                if (this.getTileID(x, y) != WATER && Phaser.Math.FloatBetween(0, 100) < 20){
                     decorArray[x][y] = 62; //tiny grass
                 }
                 else{
@@ -369,5 +406,18 @@ class Blythe extends Phaser.Scene
         const decor_tilesheet = decor.addTilesetImage("map pack")
         const decor_layer = decor.createLayer(0, decor_tilesheet, 0, 0);
     }
-	*/
+	
+	getTileID(x, y)
+	{
+		let pattern_index;
+		for(let i = 0; i < this.waveMatrix[x][y].possiblePatterns.length; i++)
+		{
+			if (this.waveMatrix[x][y].possiblePatterns[i] == true)
+			{
+				pattern_index = i;
+			}
+		}
+		let tile_id = this.patterns[pattern_index].tiles[0];
+		return tile_id;
+	}
 }
