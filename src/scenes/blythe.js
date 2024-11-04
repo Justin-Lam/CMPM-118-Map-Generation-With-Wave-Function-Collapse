@@ -230,4 +230,25 @@ class Blythe extends Phaser.Scene
 	{
 
 	}
+
+	addDecor(){
+        let decorArray = Array.from({ length: TILEWIDTH }, () => Array(TILEWIDTH).fill(0));
+        for (var x = 0; x < this.TILEHEIGHT; x++) {
+            for (var y = 0; y < this.TILEWIDTH; y++) {
+                if (this.waveMatrix[x][y]. != WATER && Phaser.Math.FloatBetween(0, 100) < 20){
+                    decorArray[x][y] = 62; //tiny grass
+                }
+                else{
+                    decorArray[x][y] = 195; //transparent
+                }
+            }
+        }
+        const decor = this.make.tilemap({
+            data: decorArray,
+            tileWidth: TILEWIDTH,
+            tileHeight: TILEWIDTH
+        })
+        const decor_tilesheet = decor.addTilesetImage("map pack")
+        const decor_layer = decor.createLayer(0, decor_tilesheet, 0, 0);
+    }
 }
