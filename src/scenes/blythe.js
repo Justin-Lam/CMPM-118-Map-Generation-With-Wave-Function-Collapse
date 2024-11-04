@@ -32,6 +32,8 @@ class Blythe extends Phaser.Scene
 		// create a stack for use in propagate()
 		this.stack = [];
 
+		this.printPatterns();
+
 		// solve with the constraint solver
 		this.constraintSolver();
 	}
@@ -167,13 +169,10 @@ class Blythe extends Phaser.Scene
 
 	printPatterns()
 	{
-		console.log("PRINTING ALL POSSIBLE PATTERN ARRAYS")
-		for (let x = 0; x < this.waveMatrix.length; x++)
+		console.log("PRINTING PATTERNS")
+		for (let x = 0; x < this.patterns.length; x++)
 		{
-			for (let y = 0; y < this.waveMatrix[x].length; y++)
-			{
-				console.log(this.waveMatrix[x][y].possiblePatterns);
-			}
+			console.log(this.patterns[x]);
 		}
 		console.log("all patterns printed");
 	}
@@ -199,7 +198,7 @@ class Blythe extends Phaser.Scene
 		{
 			for (let y = 0; y < this.waveMatrix[x].length; y++)
 			{
-				if (this.waveMatrix[x][y].entropy < minEntropy)
+				if (this.waveMatrix[x][y].entropy < minEntropy && this.waveMatrix[x][y].entropy > 1)
 				{
 					minEntropy = this.waveMatrix[x][y].entropy;
 					minX = x;
@@ -252,7 +251,7 @@ class Blythe extends Phaser.Scene
 				}
 
 				console.log("calling propagate for up adjacency");
-				this.propagateHelper(cell, up);
+				this.propagateHelper(cell, up, UP);
 				this.stack.push(up);
 			}
 
@@ -267,7 +266,7 @@ class Blythe extends Phaser.Scene
 				}
 
 				console.log("calling propagate for down adjacency");
-				this.propagateHelper(cell, down);
+				this.propagateHelper(cell, down, DOWN);
 				this.stack.push(down);
 			}
 
@@ -282,7 +281,7 @@ class Blythe extends Phaser.Scene
 				}
 
 				console.log("calling propagate for left adjacency");
-				this.propagateHelper(cell, left);
+				this.propagateHelper(cell, left, LEFT);
 				this.stack.push(left);
 			}
 
@@ -297,13 +296,13 @@ class Blythe extends Phaser.Scene
 				}
 				
 				console.log("calling propagate for right adjacency");
-				this.propagateHelper(cell, right);
+				this.propagateHelper(cell, right, RIGHT);
 				this.stack.push(right);
 			}
 		}
 	}
 
-	propagateHelper(cell, adjCell)
+	propagateHelper(cell, adjCell, direction)
 	{
 		console.log("adjCell has row = " + adjCell.row + " col = " + adjCell.col);
 		console.log("adjCell patterns: " + adjCell.possiblePatterns);
@@ -316,13 +315,22 @@ class Blythe extends Phaser.Scene
 			}
 		}
 		
-		let pattern = this.patterns[patternIndex];
+		//let pattern = this.patterns[patternIndex];
 
 		for (let i = 0; i < adjCell.possiblePatterns.length; i++)
 		{
 			if (adjCell.possiblePatterns[i] == true)
 			{
-				if (!this.patterns[i].adjacencies.includes(pattern, 0))
+				let hasPattern = false;
+				for (let j = 0; j < this.patterns[i].adjacencies.length; j++)
+				{
+					if (this.patterns[i].adjacencies[j].index == patternIndex && direction == this.patterns[i].adjacencies[j].direction)
+					{
+						hasPattern = true;
+					}
+				}
+
+				if (hasPattern == false)
 				{
 					this.ban(adjCell.row, adjCell.col, i);
 				}
@@ -340,6 +348,7 @@ class Blythe extends Phaser.Scene
 		// each pattern object has a list of tile ids
 	}
 
+	/*
 	addDecor(){
         let decorArray = Array.from({ length: TILEWIDTH }, () => Array(TILEWIDTH).fill(0));
         for (var x = 0; x < this.TILEHEIGHT; x++) {
@@ -360,4 +369,5 @@ class Blythe extends Phaser.Scene
         const decor_tilesheet = decor.addTilesetImage("map pack")
         const decor_layer = decor.createLayer(0, decor_tilesheet, 0, 0);
     }
+	*/
 }
