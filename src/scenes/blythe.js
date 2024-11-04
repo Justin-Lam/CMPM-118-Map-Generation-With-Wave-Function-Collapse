@@ -228,11 +228,11 @@ class Blythe extends Phaser.Scene
 
 		// choose random pattern in the cell (probability is affected by the pattern's weight)
 		// WEIGHTED RANDOM
-		let rand_pattern_num = Math.floor(Math.random() * this.waveMatrix[minX][minY].possiblePatterns.length)
+		//let pattern_index = Math.floor(Math.random() * this.waveMatrix[minX][minY].possiblePatterns.length)
 		// let selected_pattern = this.waveMatrix[minX][minY].possiblePatterns[rand_pattern_num];
 		//let pattern_index = Math.floor(Math.random() * this.waveMatrix[minX][minY].possiblePatterns.length)
 		// WEIGHTED RANDOM ALGORITHM (credits: https://dev.to/jacktt/understanding-the-weighted-random-algorithm-581p)
-		/*let total = 0;
+		let total = 0;
 		for (let i = 0; i < this.patterns.length; i++) {
 			total += this.patterns[i].weight;
 		}
@@ -240,15 +240,16 @@ class Blythe extends Phaser.Scene
 		let selected_pattern;
 		let pattern_index;
 		let cursor = 0;
-		for (let i = 0; i < this.waveMatrix[minX][minY].possiblePatterns.length; i++)
+		for (let i = 0; i < this.patterns.length; i++)
 		{
 			cursor += this.patterns[i].weight;
 			if (cursor >= rand_weight)
 			{
 				selected_pattern = this.patterns[i];
 				pattern_index = i;
+				break;
 			}
-		}*/
+		}
 
 		// ban() all other patterns in the cell
 		//console.log("rand num: " + rand_pattern_num);
