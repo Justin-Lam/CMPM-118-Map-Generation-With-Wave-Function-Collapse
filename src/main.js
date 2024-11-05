@@ -12,7 +12,7 @@ let config = {
 	render: {
 		pixelArt: true 		// prevent pixel art from getting blurred when scaled
 	},
-	scene: [Blythe, Justin, Michelle, MapGen]
+	scene: [ConstraintSolver, Justin, Blythe, MapGen]
 }
 
 // Game:
