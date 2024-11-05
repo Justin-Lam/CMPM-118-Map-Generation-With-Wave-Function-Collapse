@@ -66,12 +66,12 @@ class Blythe extends Phaser.Scene
 	getWaveMatrix(patterns, startingEntropy)
 	{
 		let waveMatrixTemp = [];
-		createEmptyCells(startingEntropy, waveMatrixTemp);
+		createEmptyCells(startingEntropy, waveMatrixTemp, patterns);
 		setAllPatterns(waveMatrixTemp, patterns);
 
 		return waveMatrixTemp;
 
-		function createEmptyCells(startingEntropy, waveMatrixTemp)
+		function createEmptyCells(startingEntropy, waveMatrixTemp, patterns)
 		{
 			for (let x = 0; x < OUTPUT_MAP_WIDTH; x++)
 			{
@@ -84,7 +84,8 @@ class Blythe extends Phaser.Scene
 						entropy: startingEntropy,
 						row: x,
 						col: y,
-						id: 0
+						id: 0,
+						tileEnablerCounts: [patterns.length, patterns.length, patterns.length, patterns.length]
 					};
 				}
 				waveMatrixTemp[x] = cells;
@@ -226,8 +227,35 @@ class Blythe extends Phaser.Scene
 		}
 	}
 
+	getOpposite(dir)
+	{
+		if (dir == UP)
+		{
+			return DOWNREP;
+		}
+		else if (dir == DOWN)
+		{
+			return UPREP;
+		}
+		else if (dir == LEFT)
+		{
+			return LEFTREP;
+		}
+		else
+		{
+			return RIGHTREP;
+		}
+	}
+
 	ban(x, y, i)
 	{
+		const comp = waveMatrix[x][y].tileEnablerCounts;
+
+		for (let d = 0; d < 4; d++)
+		{
+			comp[d] = 0;
+		}
+
 		// sets corresponding wave matrix entry to false
 		this.waveMatrix[x][y].possiblePatterns[i] = false;
 
@@ -346,7 +374,7 @@ class Blythe extends Phaser.Scene
 				}
 
 				console.log("calling propagate for up adjacency");
-				this.propagateHelper(cell, up, UP);
+				this.propagateHelper(cell, up, DOWN);
 				//this.stack.push(up);
 			}
 
@@ -365,7 +393,7 @@ class Blythe extends Phaser.Scene
 				}
 
 				console.log("calling propagate for down adjacency");
-				this.propagateHelper(cell, down, DOWN);
+				this.propagateHelper(cell, down, UP);
 				//this.stack.push(down);
 			}
 
@@ -384,7 +412,7 @@ class Blythe extends Phaser.Scene
 				}
 
 				console.log("calling propagate for left adjacency");
-				this.propagateHelper(cell, left, LEFT);
+				this.propagateHelper(cell, left, RIGHT);
 				//this.stack.push(left);
 			}
 
@@ -403,7 +431,7 @@ class Blythe extends Phaser.Scene
 				}
 				
 				console.log("calling propagate for right adjacency");
-				this.propagateHelper(cell, right, RIGHT);
+				this.propagateHelper(cell, right, LEFT);
 				//this.stack.push(right);
 			}
 		}
@@ -426,7 +454,7 @@ class Blythe extends Phaser.Scene
 			}
 		}
 
-		let patternAdjacencyIndices = [];
+		let patternAdjacencyIndices = []; // aka compatible tiles
 		possiblePatternIndices.forEach(patternIndex => {
 			this.patterns[patternIndex].adjacencies.forEach(adjacency => {
 				if (adjacency.direction == direction) {
