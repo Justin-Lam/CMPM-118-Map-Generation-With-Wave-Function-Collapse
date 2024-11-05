@@ -22,10 +22,22 @@ class Blythe extends Phaser.Scene
 		];
 		const N = 2;
 
-		// set up data types
-		this.waveMatrix = []; // wave matrix will be a 2d array of cell types
 		this.patterns = this.mapgen.getPatterns(inputImageMatrix, N);
-		this.clear(this.patterns);
+
+		// set up for entropy calculation, taken from kchapelier's WFC implementation
+		this.startingEntropy = 0;
+		this.weightLogWeights = [];
+		this.sumOfWeights = 0;
+		this.sumOfWeightLogWeights = 0;
+
+		this.getStartingEntropy();
+		this.sumsOfWeights = [];
+		this.sumsOfWeightLogWeights = [];
+
+		// set up wave matrix
+		this.waveMatrix = []; // wave matrix will be a 2d array of cell types
+		this.waveMatrix = this.getWaveMatrix(this.patterns, this.startingEntropy);
+		//this.clear(this.patterns);
 
 		this.failedAttempts = 0;
 
@@ -38,29 +50,28 @@ class Blythe extends Phaser.Scene
 		this.constraintSolver();
 	}
 
-	getWaveMatrix(patterns)
+	getStartingEntropy()
 	{
-		let maxEntropy = getMaxEntropy(patterns);
+		for (let t = 0; t < this.patterns.length; t++) 
+		{
+			this.weightLogWeights[t] = this.patterns[t].weight * Math.log(this.patterns[t].weight);
+			this.sumOfWeights += this.patterns[t].weight;
+			this.sumOfWeightLogWeights += this.weightLogWeights[t];
+		}
+
+		this.startingEntropy = Math.log(this.sumOfWeights) - this.sumOfWeightLogWeights / this.sumOfWeights;
+		console.log("starting entropy: " + this.startingEntropy);
+	}
+
+	getWaveMatrix(patterns, startingEntropy)
+	{
 		let waveMatrixTemp = [];
-		createEmptyCells(maxEntropy, waveMatrixTemp);
+		createEmptyCells(startingEntropy, waveMatrixTemp);
 		setAllPatterns(waveMatrixTemp, patterns);
 
 		return waveMatrixTemp;
 
-		// find maximum possible entropy of a cell (to use in clear() and wave matrix init)
-		function getMaxEntropy(patterns)
-		{
-			let maxEntropy = 0;
-
-			for (let x = 0; x < patterns.length; x++)
-			{
-				maxEntropy += patterns[x].weight;
-			}
-
-			return maxEntropy;
-		}
-
-		function createEmptyCells(maxEntropy, waveMatrixTemp)
+		function createEmptyCells(startingEntropy, waveMatrixTemp)
 		{
 			for (let x = 0; x < OUTPUT_MAP_WIDTH; x++)
 			{
@@ -70,7 +81,7 @@ class Blythe extends Phaser.Scene
 				{
 					cells[y] = {
 						possiblePatterns: [],
-						entropy: maxEntropy,
+						entropy: startingEntropy,
 						row: x,
 						col: y,
 						id: 0
@@ -98,14 +109,13 @@ class Blythe extends Phaser.Scene
 	constraintSolver()
 	{
 		let numLoops = 0;
-		//while (numLoops < 100)
-		while(1)
+		while (numLoops < 1)
+		//while(1)
 		{
 			console.log("numLoops: " + numLoops);
-			console.log(this.failedAttempts);
+			console.log("failed attempts: " + this.failedAttempts);
 
 			let isSolved = this.isSolved();
-			console.log("solve? " + isSolved);
 
 			if (this.failedAttempts >= MAX_ATTEMPTS)
 			{
@@ -150,7 +160,7 @@ class Blythe extends Phaser.Scene
 	// 1 = solved
 	isSolved()
 	{
-		console.log("printing current full list of pattern possibilities");
+		console.log("printing current full list of pattern possibilities in wave matrix");
 		this.printPossibilities();
 		// loop through every cell, check how many solutions it has
 		for (let x = 0; x < this.waveMatrix.length; x++)
@@ -185,14 +195,19 @@ class Blythe extends Phaser.Scene
 
 	clear()
 	{
-		this.waveMatrix = this.getWaveMatrix(this.patterns);
+		this.waveMatrix = this.getWaveMatrix(this.patterns, this.startingEntropy);
 		this.stack = [];
-		console.log(this.waveMatrix);
+		for (let i = 0; i < this.patterns.length; i++)
+		{
+			this.sumsOfOnes[i] = this.weights.length;
+    		this.sumsOfWeights[i] = this.sumOfWeights;
+    		this.sumsOfWeightLogWeights[i] = this.sumOfWeightLogWeights;
+		}
 	}
 
 	printPatterns()
 	{
-		console.log("PRINTING PATTERNS")
+		console.log("PRINTING PATTERN INFO")
 		for (let x = 0; x < this.patterns.length; x++)
 		{
 			console.log(this.patterns[x]);
@@ -206,20 +221,25 @@ class Blythe extends Phaser.Scene
 		{
 			for (let y = 0; y < this.patterns.length; y++)
 			{
-				console.log(this.waveMatrix[x][y].possiblePatterns);
+				console.log("row " + x + " col " + y + " possible patterns: " + this.waveMatrix[x][y].possiblePatterns);
 			}	
 		}
 	}
 
-	ban(x, y, z)
+	ban(x, y, i)
 	{
 		// sets corresponding wave matrix entry to false
-		this.waveMatrix[x][y].possiblePatterns[z] = false;
+		this.waveMatrix[x][y].possiblePatterns[i] = false;
 
+		// push onto stack for propagation
 		this.stack.push(this.waveMatrix[x][y]);
 
-		// decrements entropy value of the cell
-		this.waveMatrix[x][y].entropy -= this.patterns[z].weight;
+		// update entropy
+		this.sumsOfWeights[i] -= this.patterns[i].weight;
+  		this.sumsOfWeightLogWeights[i] -= this.weightLogWeights[i];
+
+		const sum = this.sumsOfWeights[i];
+		this.waveMatrix[x][y].entropy = Math.log(sum) - this.sumsOfWeightLogWeights[i] / sum;
 	}
 
 	observe()
@@ -228,7 +248,7 @@ class Blythe extends Phaser.Scene
 		// look for lowest entropy that is not 1
 		// if lowest entropy is 0, call clear() and increment failedAttempts
 
-		let minEntropy = this.waveMatrix[0][0].entropy;
+		let minEntropy = this.maxEntropy;
 		let minX = 0;
 		let minY = 0;
 		for (let x = 0; x < this.waveMatrix.length; x++)
@@ -237,8 +257,9 @@ class Blythe extends Phaser.Scene
 			{
 				if (this.waveMatrix[x][y].entropy < minEntropy && this.waveMatrix[x][y].entropy != 1)
 				{
-					if (this.waveMatrix[x][y].entropy >= 0)
+					if (this.waveMatrix[x][y].entropy <= 0)
 					{
+						console.log("error found when observing, returning");
 						return 0;
 					}
 					minEntropy = this.waveMatrix[x][y].entropy;
@@ -248,11 +269,8 @@ class Blythe extends Phaser.Scene
 			}
 		}
 
-		if (minEntropy == 0)
-		{
-			this.clear(this.patterns);
-			this.failedAttempts += 1;
-		}
+		console.log("cell with least entropy: row " + minX + " col " + minY + " with entropy " + minEntropy);
+		console.log("pattern possibilities in cell with least entropy: " + this.waveMatrix[minX][minY].possiblePatterns);
 
 		// choose random pattern in the cell (probability is affected by the pattern's weight)
 		// WEIGHTED RANDOM
@@ -276,6 +294,8 @@ class Blythe extends Phaser.Scene
 			}
 		}
 
+		console.log("index of rand pattern chosen: " + pattern_index);
+
 		// ban() all other patterns in the cell
 		//console.log("rand num: " + rand_pattern_num);
 		for (let z = 0; z < this.waveMatrix[minX][minY].possiblePatterns.length; z++)
@@ -295,18 +315,21 @@ class Blythe extends Phaser.Scene
 		// if they're not in the adjacency list of the pattern(s) of the cell
 		// then set the possiblePatterns indexes of cells to false
 		// then add the checked cell to the stack
+		console.log("PROPAGATING");
 
 		while (this.stack.length > 0)
 		{
 			console.log("stack length: " + this.stack.length);
 			let cell = this.stack.pop();
+
 			if (cell.entropy == 0)
 			{
 				return 0;
 			}
-			console.log("cell: ");
+
+			console.log("cell being propagated: " + "row " + cell.row + " col " + cell.col);
 			console.log(cell);
-			console.log("Patterns: " + cell.possiblePatterns);
+			console.log("patterns in cell : " + cell.possiblePatterns);
 
 			// up adjacent cell
 			if (cell.row > 0)
@@ -324,6 +347,7 @@ class Blythe extends Phaser.Scene
 
 				console.log("calling propagate for up adjacency");
 				this.propagateHelper(cell, up, UP);
+				//this.stack.push(up);
 			}
 
 			// down adjacent cell
@@ -342,6 +366,7 @@ class Blythe extends Phaser.Scene
 
 				console.log("calling propagate for down adjacency");
 				this.propagateHelper(cell, down, DOWN);
+				//this.stack.push(down);
 			}
 
 			// left adjacent cell
@@ -360,6 +385,7 @@ class Blythe extends Phaser.Scene
 
 				console.log("calling propagate for left adjacency");
 				this.propagateHelper(cell, left, LEFT);
+				//this.stack.push(left);
 			}
 
 			// right adjacent cell
@@ -378,6 +404,7 @@ class Blythe extends Phaser.Scene
 				
 				console.log("calling propagate for right adjacency");
 				this.propagateHelper(cell, right, RIGHT);
+				//this.stack.push(right);
 			}
 		}
 
@@ -388,21 +415,19 @@ class Blythe extends Phaser.Scene
 	{
 		console.log("adjCell has row = " + adjCell.row + " col = " + adjCell.col);
 		console.log("adjCell patterns: " + adjCell.possiblePatterns);
-		
+
 		// figure out pattern number(s)
-		let patternIndices = [];
+		let possiblePatternIndices = [];
 		for (let i = 0; i < cell.possiblePatterns.length; i++)
 		{
 			if (cell.possiblePatterns[i] == true)
 			{
-				patternIndices[patternIndices.length] = i;
+				possiblePatternIndices[possiblePatternIndices.length] = i;
 			}
 		}
 
-		/*
 		let patternAdjacencyIndices = [];
-
-		patternIndices.forEach(patternIndex => {
+		possiblePatternIndices.forEach(patternIndex => {
 			this.patterns[patternIndex].adjacencies.forEach(adjacency => {
 				if (adjacency.direction == direction) {
 					patternAdjacencyIndices.push(adjacency.index);
@@ -410,7 +435,7 @@ class Blythe extends Phaser.Scene
 			})
 		})
 
-		console.log(patternAdjacencyIndices);
+		console.log("adjacent patterns in cell direction: " + patternAdjacencyIndices);
 
 		for (let i = 0; i < adjCell.possiblePatterns.length; i++)
 		{
@@ -419,8 +444,8 @@ class Blythe extends Phaser.Scene
 				this.ban(adjCell.row, adjCell.col, i);
 			}
 		}
-		*/
 		
+		/*
 		for (let i = 0; i < adjCell.possiblePatterns.length; i++)
 		{
 			if (adjCell.possiblePatterns[i] == true)
@@ -440,7 +465,7 @@ class Blythe extends Phaser.Scene
 				}
 			}
 		}
-		
+		*/
 
 		console.log("adjCell NEW patterns: " + adjCell.possiblePatterns);
 	}
