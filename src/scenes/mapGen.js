@@ -26,10 +26,31 @@ class MapGen extends Phaser.Scene
 		];
 		const N = 2;
 
+		let waterTileArray = [];
+
+		for (let y = 0; y < OUTPUT_MAP_WIDTH; y++)
+		{
+			let row = [];
+			for (let x = 0; x < OUTPUT_MAP_HEIGHT; x++)
+			{
+				row[x] = WATER;
+			}
+			waterTileArray[y] = row;
+		}
+
+		this.waterMap = this.make.tilemap({
+            data: waterTileArray,
+            tileWidth: 64,
+            tileHeight: 64
+        })
+
 		this.debugKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
 		this.debugKey.on("down", (key, event) => {
 			this.generateMap(inputImageMatrix, N);
 		});
+
+        this.tilesheet = this.waterMap.addTilesetImage("map pack");
+        this.waterLayer = this.waterMap.createLayer(0, this.tilesheet, 0, 0);
 
 		this.generateMap(inputImageMatrix, N);
 	}
@@ -467,6 +488,7 @@ class MapGen extends Phaser.Scene
 		}
 	}
 
+	/*
 	display(waveMatrix, patterns)
 	{
 		if (!waveMatrix) {
@@ -497,5 +519,69 @@ class MapGen extends Phaser.Scene
 		});
 		const tileset = this.map.addTilesetImage("map pack");
 		const layer = this.map.createLayer(0, tileset, 0, 0);
+	}
+	*/
+	
+	display(waveMatrix, patterns)
+	{
+		if (!waveMatrix) {
+			return;
+		}
+
+		this.outputDataSand = [];
+		this.outputDataGrass = [];
+		for (let y = 0; y < waveMatrix.length; y++) {
+			this.outputDataSand[y] = [];
+			this.outputDataGrass[y] = [];
+			for (let x = 0; x < waveMatrix[0].length; x++) {
+				let firstValidPatternID = 0;
+				for (let i = 0; i < waveMatrix[y][x].patternPossibilities.length; i++) {
+					if (waveMatrix[y][x].patternPossibilities[i]) {
+						firstValidPatternID = i;
+						break;
+					}
+				}
+				if (patterns[firstValidPatternID].tiles[0][0] == GRASS_C)
+				{
+					this.outputDataGrass[y][x] = patterns[firstValidPatternID].tiles[0][0];
+					this.outputDataSand[y][x] = BLANK;
+				}
+				else if (patterns[firstValidPatternID].tiles[0][0] == SAND_C)
+				{
+					this.outputDataGrass[y][x] = patterns[firstValidPatternID].tiles[0][0];
+					this.outputDataSand[y][x] = BLANK;
+				}
+				else
+				{
+					this.outputDataGrass[y][x] = BLANK;
+					this.outputDataSand[y][x] = BLANK;
+				}
+				//this.outputData[y][x] = patterns[firstValidPatternID].tiles[0][0];
+			}
+		}
+		
+		if (this.mapGrass) {
+			this.mapGrass.destroy();
+		}
+		if (this.mapSand) {
+			this.mapSand.destroy();
+		}
+
+		console.log(this.outputDataGrass);
+
+		this.mapGrass = this.make.tilemap({
+			data: this.outputDataGrass,
+			tileWidth: TILE_WIDTH,
+			tileHeight: TILE_WIDTH
+		});
+
+		this.mapSand = this.make.tilemap({
+			data: this.outputDataSand,
+			tileWidth: TILE_WIDTH,
+			tileHeight: TILE_WIDTH
+		});
+
+		this.grassLayer = this.mapGrass.createLayer(0, this.tilesheet, 0, 0);
+        this.dirtLayer = this.mapSand.createLayer(0, this.tilesheet, 0, 0);
 	}
 }
