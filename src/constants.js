@@ -1,6 +1,7 @@
-// Contants:
-const OUTPUT_MAP_WIDTH = 20;		// (of a map) width in tiles
-const TILE_WIDTH = 64;				// (of a tile) width in pixels
+// Map:
+const OUTPUT_MAP_WIDTH = 20;        // in tiles
+const OUTPUT_MAP_HEIGHT = 20;       // in tiles
+const TILE_WIDTH = 64;				// in pixels
 const MAX_ATTEMPTS = 10;
 
 // Directions:

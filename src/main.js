@@ -6,7 +6,7 @@ let config = {
 	parent: "phaser-game",
 	type: Phaser.CANVAS,
 	width: OUTPUT_MAP_WIDTH * TILE_WIDTH,
-	height: OUTPUT_MAP_WIDTH * TILE_WIDTH,
+	height: OUTPUT_MAP_HEIGHT * TILE_WIDTH,
 	zoom: 0.5,
 	autoCenter: true,
 	render: {
