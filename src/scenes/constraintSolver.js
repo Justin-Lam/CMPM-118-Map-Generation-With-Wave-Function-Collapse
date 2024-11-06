@@ -26,11 +26,61 @@ class ConstraintSolver extends Phaser.Scene
 			[WATER,		SAND_C,		SAND_C,		SAND_C,		SAND_C,		SAND_C,		WATER],
 			[WATER,		WATER,		WATER,		SAND_C,		WATER,		WATER,		WATER],
 		];
-		const N = 3;
+		const hogs = [
+			[WATER,		WATER,		WATER,		WATER,		WATER,		WATER,		WATER, 		WATER, 		WATER, 		WATER],
+			[WATER,		WATER,		WATER,		WATER,		WATER,		GRASS_C,	WATER, 		WATER, 		WATER, 		WATER],
+			[WATER,		WATER,		GRASS_C,	WATER,		GRASS_C,	GRASS_C,	GRASS_C, 	WATER, 		WATER, 		WATER],
+			[WATER,		GRASS_C,	GRASS_C,	GRASS_C,	WATER,		GRASS_C,	WATER, 		WATER, 		WATER, 		WATER],
+			[WATER,		WATER,		GRASS_C,	WATER,		WATER,		WATER,		WATER, 		WATER, 		WATER, 		WATER],
+			[WATER,		WATER,		WATER,		WATER,		WATER,		WATER,		WATER, 		WATER, 		WATER, 		WATER],
+			[WATER,		WATER,		WATER,		GRASS_C,	WATER,		WATER,		WATER, 		GRASS_C, 	WATER, 		WATER],
+			[WATER,		WATER,		GRASS_C,	GRASS_C,	GRASS_C,	WATER,		GRASS_C, 	GRASS_C, 	GRASS_C, 	WATER],
+			[WATER,		WATER,		WATER,		GRASS_C,	WATER,		WATER,		WATER, 		GRASS_C, 	WATER, 		WATER],
+			[WATER,		WATER,		WATER,		WATER,		WATER,		WATER,		WATER, 		WATER, 		WATER, 		WATER],
+		];
+		const hogs2 = [
+			[WATER,		WATER,		WATER,		WATER,		WATER,		SAND_C,		WATER, 		WATER, 		WATER, 		WATER],
+			[WATER,		WATER,		SAND_C,		WATER,		SAND_C,		GRASS_C,	SAND_C, 	WATER, 		WATER, 		WATER],
+			[WATER,		SAND_C,		GRASS_C,	SAND_C,		GRASS_C,	GRASS_C,	GRASS_C, 	SAND_C, 	WATER, 		WATER],
+			[SAND_C,	GRASS_C,	GRASS_C,	GRASS_C,	SAND_C,		GRASS_C,	SAND_C, 	WATER, 		WATER, 		WATER],
+			[WATER,		SAND_C,		GRASS_C,	SAND_C,		SAND_C,		SAND_C,		WATER, 		WATER, 		WATER, 		WATER],
+			[WATER,		WATER,		SAND_C,		SAND_C,		SAND_C,		SAND_C,		SAND_C, 	SAND_C, 	WATER, 		WATER],
+			[WATER,		WATER,		SAND_C,		GRASS_C,	SAND_C,		SAND_C,		SAND_C, 	GRASS_C, 	SAND_C, 	WATER],
+			[WATER,		SAND_C,		GRASS_C,	GRASS_C,	GRASS_C,	SAND_C,		GRASS_C, 	GRASS_C, 	GRASS_C, 	SAND_C],
+			[WATER,		WATER,		SAND_C,		GRASS_C,	SAND_C,		WATER,		SAND_C, 	GRASS_C, 	SAND_C, 	WATER],
+			[WATER,		WATER,		WATER,		SAND_C,		WATER,		WATER,		WATER, 		SAND_C, 	WATER, 		WATER],
+		];
+		const noise1 = [
+			[110, 40, 110, 40, 56, 56, 110, 56, 56, 56],
+			[110, 110, 110, 110, 56, 56, 110, 56, 56, 110],
+			[110, 110, 110, 56, 56, 56, 56, 56, 56, 110],
+			[56, 110, 110, 56, 56, 56, 56, 56, 56, 56],
+			[110, 56, 56, 56, 56, 56, 56, 56, 56, 56],
+			[56, 56, 56, 110, 56, 56, 56, 56, 56, 56],
+			[56, 56, 56, 110, 56, 56, 56, 56, 56, 56],
+			[110, 110, 56, 56, 56, 56, 56, 56, 56, 56],
+			[40, 110, 56, 56, 56, 56, 56, 56, 56, 56],
+			[110, 56, 56, 56, 56, 110, 110, 110, 56, 56]
+		];
+		const noise2 = [
+			[110, 40, 110, 110, 110, 110, 56, 56, 56, 56],
+			[110, 40, 110, 56, 56, 56, 56, 56, 56, 56],
+			[110, 40, 110, 110, 56, 56, 56, 56, 56, 56],
+			[40, 40, 40, 110, 56, 56, 56, 56, 56, 56],
+			[40, 40, 40, 110, 56, 56, 56, 56, 56, 56],
+			[40, 40, 110, 56, 56, 56, 56, 56, 56, 56],
+			[40, 40, 110, 56, 56, 110, 56, 56, 56, 56],
+			[110, 110, 110, 110, 56, 56, 56, 56, 56, 56],
+			[56, 110, 40, 110, 56, 56, 56, 56, 56, 56],
+			[56, 110, 40, 110, 56, 56, 56, 56, 56, 56]
+		];
+		
+		const inputImageMatrix = hogs;
+		const N = 2;
 
 		/*
 		const map = this.make.tilemap({
-			data: inputImageMatrix2,
+			data: inputImageMatrix,
 			tileWidth: TILE_WIDTH,
 			tileHeight: TILE_WIDTH
 		});
@@ -38,7 +88,7 @@ class ConstraintSolver extends Phaser.Scene
 		const layer = map.createLayer(0, tileset, 0, 0);
 		*/
 
-		this.generateMap(inputImageMatrix2, N);
+		this.generateMap(inputImageMatrix, N);
 	}
 
 	generateMap(inputImageMatrix, patternWidth)
@@ -329,30 +379,20 @@ class ConstraintSolver extends Phaser.Scene
 				function getEntropy(cell)
 				{
 					let sumOfWeights = 0;
-					for (let i = 0; i < cell.patternPossibilities.length; i++) {
-						if (cell.patternPossibilities[i]) {
-							sumOfWeights += patterns[i].weight;
-						}
-					}
-
-					// If cell's has no possible patterns (all false)
-					if (sumOfWeights == 0) {
-						return -1;
-					}
-
 					let sumOfWeightLogWeights = 0;
 					for (let i = 0; i < cell.patternPossibilities.length; i++) {
 						if (cell.patternPossibilities[i]) {
+							sumOfWeights += patterns[i].weight;
 							sumOfWeightLogWeights += patterns[i].weight * Math.log(patterns[i].weight);
 						}
 					}
-					
 					return Math.log(sumOfWeights) - (sumOfWeightLogWeights / sumOfWeights);
 				}
 			}
 
 			function observe(cell)
 			{
+				console.log("observing");
 				const chosenPatternIndex = getChosenPatternIndex();
 				setOtherIndicesFalse(cell, chosenPatternIndex);
 				
@@ -404,7 +444,7 @@ class ConstraintSolver extends Phaser.Scene
 
 				// Propagate all the cells in the stack
 				while (stack.length > 0) {
-
+					console.log(".");
 					// Get the cell to propagate
 					const cell = stack.pop();
 
@@ -433,8 +473,8 @@ class ConstraintSolver extends Phaser.Scene
 
 						// Adjust the adjacent cell's pattern possibilities
 						// using the cell being propagated's adjacencies and the direction that the adjacent cell is from the cell being propagated
-
 						// Loop over the adjacent cell's pattern possibilities, finding the ones that are possible (true)
+						let wasAdjusted = false;
 						for (let i = 0; i < adjCell.patternPossibilities.length; i++) {
 							if (adjCell.patternPossibilities[i]) {
 
@@ -459,10 +499,12 @@ class ConstraintSolver extends Phaser.Scene
 								// Adjust the adjacent cell's pattern possibility if it's no longer possible
 								if (!isAdjacent) {
 									adjCell.patternPossibilities[i] = false;
-									// If we need to adjust a pattern possibility for a cell, we need to propagate to its adjacent cells since it got changed
-									stack.push(adjCell);
+									wasAdjusted = true;
 								}
 							}
+						}
+						if (wasAdjusted) {
+							stack.push(adjCell);
 						}
 					});
 				}
