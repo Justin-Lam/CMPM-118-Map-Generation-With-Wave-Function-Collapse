@@ -39,6 +39,7 @@ class MapGen extends Phaser.Scene
 		const patterns = this.getPatterns(inputImageMatrix, patternWidth);
 		const waveMatrix = this.getWaveMatrix(patterns);
 		this.display(waveMatrix, patterns);
+		this.addDecor(this.outputData);
 	}
 	
 	/**
@@ -487,6 +488,8 @@ class MapGen extends Phaser.Scene
 				this.outputData[y][x] = patterns[firstValidPatternID].tiles[0][0];
 			}
 		}
+		this.createBG(this.outputData);
+		this.addTransitions(this.outputData);
 		if (this.map) {
 			this.map.destroy();
 		}
@@ -497,5 +500,161 @@ class MapGen extends Phaser.Scene
 		});
 		const tileset = this.map.addTilesetImage("map pack");
 		const layer = this.map.createLayer(0, tileset, 0, 0);
+	}
+
+	createBG(mapArray){
+		let waterArray = Array.from({ length: mapArray.length }, () => Array(mapArray.length).fill(0));
+        for (var x = 0; x < mapArray.length; x++) {
+            for (var y = 0; y < mapArray[x].length; y++) {
+                waterArray[x][y] = WATER;
+            }
+        }
+        const water = this.make.tilemap({
+            data: waterArray,
+            tileWidth: TILE_WIDTH,
+            tileHeight: TILE_WIDTH
+        })
+        const water_tilesheet = water.addTilesetImage("map pack")
+        const water_layer = water.createLayer(0, water_tilesheet, 0, 0);
+	}
+
+	addDecor(mapArray){
+		let grassTiles = [GRASS_C, GRASS_BR, GRASS_BM, GRASS_BL, GRASS_TR, GRASS_TM, GRASS_TL, GRASS_RM, GRASS_LM];
+		let badTiles = [WATER, SAND_BL, SAND_BM, SAND_BR];
+        let decorArray = Array.from({ length: mapArray.length }, () => Array(mapArray.length).fill(0));
+        for (var x = 0; x < mapArray.length; x++) {
+            for (var y = 0; y < mapArray[x].length; y++) {
+                if (!badTiles.includes(mapArray[x][y]) && Phaser.Math.FloatBetween(0, 100) < 10){
+                    decorArray[x][y] = 62; //mushrooms
+                }
+				else if (grassTiles.includes(mapArray[x][y]) && Phaser.Math.FloatBetween(0, 100) < 55) {
+					decorArray[x][y] = 177; //tiny grass
+				}
+                else{
+                    decorArray[x][y] = 195; //transparent
+                }
+            }
+        }
+        const decor = this.make.tilemap({
+            data: decorArray,
+            tileWidth: TILE_WIDTH,
+            tileHeight: TILE_WIDTH
+        })
+        const decor_tilesheet = decor.addTilesetImage("map pack")
+        const decor_layer = decor.createLayer(0, decor_tilesheet, 0, 0);
+    }
+
+	addTransitions(mapArray){
+		let sandTiles = [SAND_BR, SAND_BM, SAND_BL];
+        //TRANSITION TILES
+        for (var x = 0; x < mapArray.length; x++) {
+            for (var y = 0; y < mapArray[x].length; y++) {
+				// GRASS
+				// if sand tile has water tile underneath
+                if (x < mapArray.length - 1){
+                    if (mapArray[x][y] == GRASS_C && mapArray[x+1][y] == WATER){
+                        mapArray[x][y] = GRASS_BM;
+                    }
+                }
+                // if sand tile has water tile above
+                if (x > 0){
+                    if (mapArray[x][y] == GRASS_C && mapArray[x-1][y] == WATER){
+                        mapArray[x][y] = GRASS_TM;
+                    }
+                }
+                // if sand tile has water tile to the right
+                if (y < mapArray[x].length - 1){
+                    if (mapArray[x][y] == GRASS_C && mapArray[x][y+1] == WATER){
+                        mapArray[x][y] = GRASS_RM;
+                    }
+                }
+                // if sand tile has water tile to the left
+                if (y > 0){
+                    if (mapArray[x][y] == GRASS_C && mapArray[x][y-1] == WATER){
+                        mapArray[x][y] = GRASS_LM;
+                    }
+                }
+				//SAND
+				// if sand tile has water tile underneath
+                if (x < mapArray.length - 1){
+                    if (mapArray[x][y] == SAND_C && mapArray[x+1][y] == WATER){
+                        mapArray[x][y] = SAND_BM;
+                    }
+                }
+                // if sand tile has water tile above
+                if (x > 0){
+                    if (mapArray[x][y] == SAND_C && mapArray[x-1][y] == WATER){
+                        mapArray[x][y] = SAND_TM;
+                    }
+                }
+                // if sand tile has water tile to the right
+                if (y < mapArray[x].length - 1){
+                    if (mapArray[x][y] == SAND_C && mapArray[x][y+1] == WATER){
+                        mapArray[x][y] = SAND_RM;
+                    }
+                }
+                // if sand tile has water tile to the left
+                if (y > 0){
+                    if (mapArray[x][y] == SAND_C && mapArray[x][y-1] == WATER){
+                        mapArray[x][y] = SAND_LM;
+                    }
+                }
+            }
+        }
+		// CORNER TILES
+        for (var x = 0; x < mapArray.length; x++) {
+            for (var y = 0; y < mapArray[x].length; y++) {
+				// GRASS
+                // bottom left corner
+                if (x < mapArray.length - 1 && y > 0){
+                    if (mapArray[x][y] == GRASS_BM && mapArray[x][y-1] == WATER && mapArray[x+1][y] == WATER){
+                        mapArray[x][y] = GRASS_BL;
+                    }
+                }
+                // bottom right corner
+                if (x < mapArray.length - 1 && y < mapArray[x].length - 1){
+                    if (mapArray[x][y] == GRASS_BM && mapArray[x][y+1] == WATER && mapArray[x+1][y] == WATER){
+                        mapArray[x][y] = GRASS_BR;
+                    }
+                }
+                // top left corner
+                if (x > 0 && y > 0){
+                    if (mapArray[x][y] == GRASS_TM && mapArray[x][y-1] == WATER && mapArray[x-1][y] == WATER){
+                        mapArray[x][y] = GRASS_TL;
+                    }
+                }
+                // top right corner
+                if (x > 0 && y < mapArray[x].length - 1){
+                    if (mapArray[x][y] == GRASS_TM && mapArray[x][y+1] == WATER && mapArray[x-1][y] == WATER){
+                        mapArray[x][y] = GRASS_TR;
+                    }
+                }
+				// SAND
+                // bottom left corner
+                if (x < mapArray.length - 1 && y > 0){
+                    if (mapArray[x][y] == SAND_BM && mapArray[x][y-1] == WATER && mapArray[x+1][y] == WATER){
+                        mapArray[x][y] = SAND_BL;
+                    }
+                }
+                // bottom right corner
+                if (x < mapArray.length - 1 && y < mapArray[x].length - 1){
+                    if (mapArray[x][y] == SAND_BM && mapArray[x][y+1] == WATER && mapArray[x+1][y] == WATER){
+                        mapArray[x][y] = SAND_BR;
+                    }
+                }
+                // top left corner
+                if (x > 0 && y > 0){
+                    if (mapArray[x][y] == SAND_TM && mapArray[x][y-1] == WATER && mapArray[x-1][y] == WATER){
+                        mapArray[x][y] = SAND_TL;
+                    }
+                }
+                // top right corner
+                if (x > 0 && y < mapArray[x].length - 1){
+                    if (mapArray[x][y] == SAND_TM && mapArray[x][y+1] == WATER && mapArray[x-1][y] == WATER){
+                        mapArray[x][y] = SAND_TR;
+                    }
+                }
+            }
+        }
 	}
 }
