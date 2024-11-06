@@ -26,6 +26,29 @@ class ConstraintSolver extends Phaser.Scene
 	{
 		const patterns = this.getPatterns(inputImageMatrix, patternWidth);
 		const waveMatrix = this.getWaveMatrix(inputImageMatrix, patterns);
+
+		const data = [];
+		for (let y = 0; y < waveMatrix.length; y++) {
+			data[y] = [];
+			for (let x = 0; x < waveMatrix[0].length; x++) {
+				let firstValidPatternID = 0;
+				for (let i = 0; i < waveMatrix[y][x].patternPossibilities.length; i++) {
+					if (waveMatrix[y][x].patternPossibilities[i]) {
+						firstValidPatternID = i;
+						break;
+					}
+				}
+				data[y][x] = patterns[firstValidPatternID].tiles[0][0];
+			}
+		}
+		const map = this.make.tilemap({
+			data: data,
+			tileWidth: TILE_WIDTH,
+			tileHeight: TILE_WIDTH
+		});
+		const tileset = map.addTilesetImage("map pack");
+		const layer = map.createLayer(0, tileset, 0, 0);
+
 		//this.render(waveMatrix);
 	}
 	
@@ -235,16 +258,18 @@ class ConstraintSolver extends Phaser.Scene
 		function createWaveMatrix()
 		{
 			const waveMatrix = [];
-			for (let y = 0; y < inputImageMatrix.length; y++) {
+			for (let y = 0; y < OUTPUT_MAP_WIDTH; y++) {
 				waveMatrix[y] = [];
-				for (let x = 0; x < inputImageMatrix[0].length; x++) {
-					const tile = {
-						possiblePatterns: []
+				for (let x = 0; x < OUTPUT_MAP_WIDTH; x++) {
+					const cell = {
+						patternPossibilities: [],
+						y: y,
+						x: x
 					};
 					for (let i = 0; i < patterns.length; i++) {
-						tile.possiblePatterns[i] = true;
+						cell.patternPossibilities[i] = true;
 					}
-					waveMatrix[y][x] = tile;
+					waveMatrix[y][x] = cell;
 				}
 			}
 			return waveMatrix;
@@ -252,35 +277,137 @@ class ConstraintSolver extends Phaser.Scene
 
 		function solveWaveMatrix(waveMatrix)
 		{
-			const tile = getLowestEntropyUnsolvedTile();
-			//observe(tile);
-			//propogate(tile);
+			const leastEntropyUnsolvedCell = getLeastEntropyUnsolvedCell();
+			observe(leastEntropyUnsolvedCell);
+			propagate(leastEntropyUnsolvedCell);
 
-			function getLowestEntropyUnsolvedTile()
+			function getLeastEntropyUnsolvedCell()
 			{
+				let leastEntropy = getEntropy(waveMatrix[0][0]);
+				if (leastEntropy == 1) {
+					throw new Error("leastEntropy == 1");
+				}
+				let leastEntropyCell = waveMatrix[0][0];
+
 				for (let y = 0; y < waveMatrix.length; y++) {
 					for (let x = 0; x < waveMatrix[0].length; x++) {
-						const cellEntropy = getEntropy(waveMatrix[y][x]);
-						if (cellEntropy != 1) {
-							lowestEntropy = cellEntropy;
+						const cell = waveMatrix[y][x];
+						const cellEntropy = getEntropy(cell);
+						if (cellEntropy < leastEntropy) {
+							leastEntropy = cellEntropy;
+							leastEntropyCell = cell;
 						}
 					}
 				}
 
-				let lowestEntropy = getEntropy(waveMatrix[0][0]);
-				let lowestEntropyTile = waveMatrix[0][0];
-				
+				return leastEntropyCell;
 
 
-				function getEntropy(tile)
+				// Shannon Entropy
+				function getEntropy(cell)
 				{
 					let sumOfWeights = 0;
-					for (let i = 0; i < tile.possiblePatterns.length; i++) {
-						if (tile.possiblePatterns[i]) {
+					for (let i = 0; i < cell.patternPossibilities.length; i++) {
+						if (cell.patternPossibilities[i]) {
+							sumOfWeights += patterns[i].weight;
+						}
+					}
 
+					let sumOfWeightLogWeights = 0;
+					for (let i = 0; i < cell.patternPossibilities.length; i++) {
+						if (cell.patternPossibilities[i]) {
+							sumOfWeightLogWeights += patterns[i].weight * Math.log(patterns[i].weight);
+						}
+					}
+					
+					return Math.log(sumOfWeights) - (sumOfWeightLogWeights / sumOfWeights);
+				}
+			}
+
+			function observe(cell)
+			{
+				let chosenPatternIndex = getChosenPatternIndex();
+				for (let i = 0; i < cell.patternPossibilities.length; i++) {
+					if (i == chosenPatternIndex) {
+						continue;
+					}
+					cell.patternPossibilities[i] = false;
+				}
+				
+
+				function getChosenPatternIndex()
+				{
+					const possiblePatternIndices = [];
+					for (let i = 0; i < cell.patternPossibilities.length; i++) {
+						if (cell.patternPossibilities[i]) {
+							possiblePatternIndices.push(i);
+						}
+					}
+	
+					let totalWeightOfPossiblePatterns = 0;
+					possiblePatternIndices.forEach(index => {
+						totalWeightOfPossiblePatterns += patterns[index].weight;
+					});			
+					
+					const randomNum = Math.ceil(Math.random() * totalWeightOfPossiblePatterns);
+					
+					let cursor = 0;
+					for (let i = 0; i < possiblePatternIndices.length; i++) {
+						cursor += patterns[possiblePatternIndices[i]].weight;
+						if (cursor >= randomNum) {
+							return possiblePatternIndices[i];
 						}
 					}
 				}
+			}
+
+			function propagate(cell)
+			{
+				const stack = [cell];
+
+				while (stack.length > 0) {
+
+					const cell = stack.pop();
+
+					const possiblePatternIndices = [];
+					for (let i = 0; i < cell.patternPossibilities.length; i++) {
+						if (cell.patternPossibilities[i]) {
+							possiblePatternIndices.push(i);
+						}
+					}
+	
+					DIRECTIONS.forEach(direction => {
+						if (cell.y + direction[1] < 0 || cell.y + direction[1] > waveMatrix.length-1) {
+							return;
+						}
+						if (cell.x + direction[0] < 0 || cell.x + direction[0] > waveMatrix[0].length-1) {
+							return;
+						}
+						
+						const adjCell = waveMatrix[cell.y + direction[1]][cell.x + direction[0]];
+
+						for (let i = 0; i < adjCell.patternPossibilities.length; i++) {
+							if (adjCell.patternPossibilities[i]) {
+								let isAdjacent = false;
+								possiblePatternIndices.forEach(index => {
+									patterns[index].adjacencies.forEach(adjacency => {
+										if (adjacency.index == i && adjacency.direction == direction) {
+											isAdjacent = true;
+										}
+									});
+								});
+
+								if (!isAdjacent) {
+									adjCell.patternPossibilities[i] = false;
+									stack.push(adjCell);
+								}
+							}
+						}
+					});
+
+				}
+
+				
 			}
 		}
 	}
