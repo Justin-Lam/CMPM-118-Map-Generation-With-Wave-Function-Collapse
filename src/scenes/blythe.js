@@ -43,6 +43,7 @@ class Blythe extends Phaser.Scene
 
 		// create a stack for use in propagate()
 		this.stack = [];
+		this.stackSize = 0;
 
 		this.printPatterns();
 
@@ -197,6 +198,7 @@ class Blythe extends Phaser.Scene
 	{
 		this.waveMatrix = this.getWaveMatrix(this.patterns, this.startingEntropy);
 		this.stack = [];
+		this.stackSize = 0;
 		for (let i = 0; i < this.patterns.length; i++)
 		{
 			this.sumsOfOnes[i] = this.weights.length;
@@ -232,7 +234,8 @@ class Blythe extends Phaser.Scene
 		this.waveMatrix[x][y].possiblePatterns[i] = false;
 
 		// push onto stack for propagation
-		this.stack.push(this.waveMatrix[x][y]);
+		//this.stack.push(this.waveMatrix[x][y]);
+		//this.stackSize++;
 
 		// update entropy
 		this.sumsOfWeights[i] -= this.patterns[i].weight;
@@ -317,10 +320,11 @@ class Blythe extends Phaser.Scene
 		// then add the checked cell to the stack
 		console.log("PROPAGATING");
 
-		while (this.stack.length > 0)
+		while (this.stackSize > 0)
 		{
 			console.log("stack length: " + this.stack.length);
 			let cell = this.stack.pop();
+			this.stackSize--;
 
 			if (cell.entropy == 0)
 			{
@@ -442,6 +446,8 @@ class Blythe extends Phaser.Scene
 			if (adjCell.possiblePatterns[i] == true && !patternAdjacencyIndices.includes(i))
 			{
 				this.ban(adjCell.row, adjCell.col, i);
+				this.stack.push([adjCell]);
+				this.stackSize++;
 			}
 		}
 		
