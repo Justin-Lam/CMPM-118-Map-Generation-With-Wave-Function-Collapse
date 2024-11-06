@@ -2,7 +2,7 @@
 const OUTPUT_MAP_WIDTH = 20;        // in tiles
 const OUTPUT_MAP_HEIGHT = 20;       // in tiles
 const TILE_WIDTH = 64;				// in pixels
-const MAX_ATTEMPTS = 10;
+const MAX_ATTEMPTS = 100;
 
 // Directions:
 const UP = [0, -1];

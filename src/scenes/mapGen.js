@@ -13,11 +13,23 @@ class MapGen extends Phaser.Scene
 	create()
 	{
 		const inputImageMatrix = [
-			[WATER,		WATER,		WATER],
-			[SAND_C,	SAND_C,		WATER],
-			[GRASS_C,	GRASS_C,	SAND_C]
+			[110, 40, 110, 110, 110, 110, 56, 56, 56, 56],
+			[110, 40, 110, 56, 56, 56, 56, 56, 56, 56],
+			[110, 40, 110, 110, 56, 56, 56, 56, 56, 56],
+			[40, 40, 40, 110, 56, 56, 56, 56, 56, 56],
+			[40, 40, 40, 110, 56, 56, 56, 56, 56, 56],
+			[40, 40, 110, 56, 56, 56, 56, 56, 56, 56],
+			[40, 40, 110, 56, 56, 110, 56, 56, 56, 56],
+			[110, 110, 110, 110, 56, 56, 56, 56, 56, 56],
+			[56, 110, 40, 110, 56, 56, 56, 56, 56, 56],
+			[56, 110, 40, 110, 56, 56, 56, 56, 56, 56]
 		];
 		const N = 2;
+
+		this.debugKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
+		this.debugKey.on("down", (key, event) => {
+			this.generateMap(inputImageMatrix, N);
+		});
 
 		this.generateMap(inputImageMatrix, N);
 	}
@@ -25,19 +37,20 @@ class MapGen extends Phaser.Scene
 	generateMap(inputImageMatrix, patternWidth)
 	{
 		const patterns = this.getPatterns(inputImageMatrix, patternWidth);
-		// do wfc using the patterns
+		const waveMatrix = this.getWaveMatrix(patterns);
+		this.display(waveMatrix, patterns);
 	}
 	
 	/**
 	 * Processes the input image to get its patterns.
 	 * @param {number[][]} inputImageMatrix the data representation of the input image as a 2D array of tile IDs
 	 * @param {number} patternWidth N (as in NxN)
-	 * @returns {{ tiles: number[][], adjacencies: [{ index: number, direction: [number, number] }], weight: number }[]} a list of patterns
+	 * @returns {{ tiles: number[][], adjacencies: [{ index: number, direction: [number, number] }], weight: number }[]} an array of patterns
 	 */
 	getPatterns(inputImageMatrix, patternWidth)
 	{
 		ensureValidInput();
-		let patterns = createEmptyPatterns(inputImageMatrix.length, inputImageMatrix[0].length);
+		let patterns = createEmptyPatterns();
 		getTiles(patterns);
 		patterns = getWeights(patterns);	// getWeights() returns a new array without duplicate patterns so we need to reassign
 		getAdjacencies(patterns);
@@ -65,8 +78,8 @@ class MapGen extends Phaser.Scene
 		}
 
 		/**
-		 * Creates a list of empty pattern objects. The amount of patterns created is the same as the amount of tiles in the input image.
-		 * @returns {{}[]} a list of pattern objects
+		 * Creates an array of empty pattern objects. The amount of patterns created is the same as the amount of tiles in the input image.
+		 * @returns {{}[]} an array of pattern objects
 		 */
 		function createEmptyPatterns()
 		{
@@ -83,7 +96,7 @@ class MapGen extends Phaser.Scene
 
 		/**
 		 * Populates the tiles attribute for each pattern in patterns.
-		 * @param {{}[]} patterns  a list of pattern objects
+		 * @param {{}[]} patterns  an array of pattern objects
 		 */
 		function getTiles(patterns)
 		{
@@ -119,8 +132,8 @@ class MapGen extends Phaser.Scene
 
 		/**
 		 * Populates the weight attribute for each unique pattern in patterns and removes their duplicates.
-		 * @param {{}} patterns a list of pattern objects
-		 * @returns {{}[]} a list of pattern objects
+		 * @param {{}} patterns an array of pattern objects
+		 * @returns {{}[]} an array of pattern objects
 		 */
 		function getWeights(patterns)
 		{
@@ -139,7 +152,7 @@ class MapGen extends Phaser.Scene
 
 		/**
 		 * Populates the adjacencies attribute for each pattern in patterns.
-		 * @param {{}[]}} a list of pattern objects
+		 * @param {{}[]}} an array of pattern objects
 		 */
 		function getAdjacencies(patterns)
 		{
@@ -222,5 +235,267 @@ class MapGen extends Phaser.Scene
 				return true;
 			}
 		}
+	}
+
+	/**
+	 * Uses the patterns to create, solve, and return a wave matrix.
+	 * @param {{}[]} patterns an array of pattern objects
+	 * @returns {{ patternPossibilities: number[], y: number, x: number }[][]} a 2D array of cell objects
+	 */
+	getWaveMatrix(patterns)
+	{
+		const waveMatrix = createInitialWaveMatrix();
+		solveWaveMatrix(waveMatrix);
+		return waveMatrix;
+
+
+		/**
+		 * Creates a 2D array of initialized cell objects.
+		 * The 2D array has the same dimensions as the output image.
+		 * Initialized cell objects have their patternPossibilities all set to true.
+		 * @returns {{}[][]} a 2D array of cell objects
+		 */
+		function createInitialWaveMatrix()
+		{
+			const waveMatrix = [];
+			for (let y = 0; y < OUTPUT_MAP_HEIGHT; y++) {
+				waveMatrix[y] = [];
+				for (let x = 0; x < OUTPUT_MAP_WIDTH; x++) {
+					const cell = {
+						patternPossibilities: [],
+						y: y,
+						x: x
+					};
+					for (let i = 0; i < patterns.length; i++) {
+						cell.patternPossibilities[i] = true;
+					}
+					waveMatrix[y][x] = cell;
+				}
+			}
+			return waveMatrix;
+		}
+
+		function solveWaveMatrix(waveMatrix)
+		{
+			let numTries = 0;
+			while (numTries < MAX_ATTEMPTS) {
+				let cell = getLeastEntropyUnsolvedCell();
+				observe(cell);
+				propagate(cell);
+				const state = getState();
+				if (state == "Contradiction") {
+					numTries++;
+					waveMatrix = createInitialWaveMatrix();
+				}
+				else if (state == "Solved") {
+					return;
+				}
+				// else state must be unsolved so go again
+			}
+
+			function getLeastEntropyUnsolvedCell()
+			{
+				let leastEntropy = Number.MAX_SAFE_INTEGER;
+				let leastEntropyCell = waveMatrix[0][0];
+				for (let y = 0; y < waveMatrix.length; y++) {
+					for (let x = 0; x < waveMatrix[0].length; x++) {
+						const cell = waveMatrix[y][x];
+						const entropy = getEntropy(cell);
+						if (entropy < leastEntropy && entropy != 0) {
+							leastEntropy = entropy;
+							leastEntropyCell = cell;
+						}
+					}
+				}
+				return leastEntropyCell;
+
+
+				// Shannon Entropy
+				function getEntropy(cell)
+				{
+					let sumOfWeights = 0;
+					let sumOfWeightLogWeights = 0;
+					for (let i = 0; i < cell.patternPossibilities.length; i++) {
+						if (cell.patternPossibilities[i]) {
+							sumOfWeights += patterns[i].weight;
+							sumOfWeightLogWeights += patterns[i].weight * Math.log(patterns[i].weight);
+						}
+					}
+					return Math.log(sumOfWeights) - (sumOfWeightLogWeights / sumOfWeights);
+				}
+			}
+
+			function observe(cell)
+			{
+				const chosenPatternIndex = getChosenPatternIndex();
+				setOtherIndicesFalse(cell, chosenPatternIndex);
+				
+
+				function getChosenPatternIndex()
+				{
+					// Get an array of all the possible pattern indices (pattern is true)
+					const possiblePatternIndices = [];
+					for (let i = 0; i < cell.patternPossibilities.length; i++) {
+						if (cell.patternPossibilities[i]) {
+							possiblePatternIndices.push(i);
+						}
+					}
+	
+					// Get the total weight of the possible patterns
+					let totalWeightOfPossiblePatterns = 0;
+					possiblePatternIndices.forEach(index => {
+						totalWeightOfPossiblePatterns += patterns[index].weight;
+					});			
+					
+					// Generate a random number that's within the range of the total weight of the possible patterns
+					const randomNum = Math.ceil(Math.random() * totalWeightOfPossiblePatterns);
+					
+					// Get the chosen pattern index using the random number
+					let cursor = 0;
+					for (let i = 0; i < possiblePatternIndices.length; i++) {
+						cursor += patterns[possiblePatternIndices[i]].weight;
+						if (cursor >= randomNum) {
+							return possiblePatternIndices[i];
+						}
+					}
+				}
+			}
+			
+			function setOtherIndicesFalse(cell, index)
+			{
+				for (let i = 0; i < cell.patternPossibilities.length; i++) {
+					if (i == index) {
+						continue;
+					}
+					cell.patternPossibilities[i] = false;
+				}
+			}
+
+			function propagate(cell)
+			{
+				// Create the stack of cells to be propagated
+				const stack = [cell];
+
+				// Propagate all the cells in the stack
+				while (stack.length > 0) {
+					// Get the cell to propagate
+					const cell = stack.pop();
+
+					// Get an array of all the possible pattern indices (pattern is true)
+					const possiblePatternIndices = [];
+					for (let i = 0; i < cell.patternPossibilities.length; i++) {
+						if (cell.patternPossibilities[i]) {
+							possiblePatternIndices.push(i);
+						}
+					}
+	
+					// For each adjacent cell to the cell being propagated, adjust their pattern possibilities
+					DIRECTIONS.forEach(direction => {
+						
+						// Don't go out of bounds of the wave matrix
+						if (cell.y + direction[1] < 0 || cell.y + direction[1] > waveMatrix.length-1) {
+							return;
+						}
+						if (cell.x + direction[0] < 0 || cell.x + direction[0] > waveMatrix[0].length-1) {
+							return;
+						}
+						
+						// Get the adjacent cell
+						const adjCell = waveMatrix[cell.y + direction[1]][cell.x + direction[0]];
+
+
+						// Adjust the adjacent cell's pattern possibilities
+						// using the cell being propagated's adjacencies and the direction that the adjacent cell is from the cell being propagated
+						// Loop over the adjacent cell's pattern possibilities, finding the ones that are possible (true)
+						let wasAdjusted = false;
+						for (let i = 0; i < adjCell.patternPossibilities.length; i++) {
+							if (adjCell.patternPossibilities[i]) {
+
+								// Assume this possible pattern for the adjacent cell isn't adjacent to any of the possible patterns for the cell being propagated
+								// we will be looking for proof of any adjacencies
+								let isAdjacent = false;
+
+								// Look through the possible pattern indices of the cell being propagated
+								possiblePatternIndices.forEach(index => {
+
+									// For each possible pattern, look through the adjacencies
+									patterns[index].adjacencies.forEach(adjacency => {
+
+										// This possible pattern for the adjacent cell is adjacent to this possible pattern for the cell being propagated
+										// if their indices and direction are the same
+										if (adjacency.index == i && adjacency.direction == direction) {
+											isAdjacent = true;
+										}
+									});
+								});
+
+								// Adjust the adjacent cell's pattern possibility if it's no longer possible
+								if (!isAdjacent) {
+									adjCell.patternPossibilities[i] = false;
+									wasAdjusted = true;
+								}
+							}
+						}
+						if (wasAdjusted) {
+							stack.push(adjCell);
+						}
+					});
+				}
+			}
+
+			function getState()
+			{
+				for (let y = 0; y < waveMatrix.length; y++) {
+					for (let x = 0; x < waveMatrix[0].length; x++) {
+						const cell = waveMatrix[y][x];
+						let numTrues = 0;
+						for (let i = 0; i < cell.patternPossibilities.length; i++) {
+							if (cell.patternPossibilities[i]) {
+								numTrues++;
+							}
+						}
+						if (numTrues == 0) {
+							return "Contradiction";
+						}
+						else if (numTrues > 1) {
+							return "Unsolved";
+						}
+					}
+				}
+				return "Solved";
+			}
+		}
+	}
+
+	display(waveMatrix, patterns)
+	{
+		if (!waveMatrix) {
+			return;
+		}
+
+		this.outputData = [];
+		for (let y = 0; y < waveMatrix.length; y++) {
+			this.outputData[y] = [];
+			for (let x = 0; x < waveMatrix[0].length; x++) {
+				let firstValidPatternID = 0;
+				for (let i = 0; i < waveMatrix[y][x].patternPossibilities.length; i++) {
+					if (waveMatrix[y][x].patternPossibilities[i]) {
+						firstValidPatternID = i;
+						break;
+					}
+				}
+				this.outputData[y][x] = patterns[firstValidPatternID].tiles[0][0];
+			}
+		}
+		if (this.map) {
+			this.map.destroy();
+		}
+		this.map = this.make.tilemap({
+			data: this.outputData,
+			tileWidth: TILE_WIDTH,
+			tileHeight: TILE_WIDTH
+		});
+		const tileset = this.map.addTilesetImage("map pack");
+		const layer = this.map.createLayer(0, tileset, 0, 0);
 	}
 }
