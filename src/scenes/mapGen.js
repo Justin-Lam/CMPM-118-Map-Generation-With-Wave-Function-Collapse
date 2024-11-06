@@ -28,7 +28,7 @@ class MapGen extends Phaser.Scene
 
 		this.debugKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
 		this.debugKey.on("down", (key, event) => {
-			this.generateMap(inputImageMatrix, N);
+			this.scene.restart();
 		});
 
 		this.generateMap(inputImageMatrix, N);
