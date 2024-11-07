@@ -567,7 +567,8 @@ class MapGen extends Phaser.Scene
 			this.mapSand.destroy();
 		}
 
-		console.log(this.outputDataGrass);
+		this.setGrassTransition();
+		this.setSandTransition();
 
 		this.mapGrass = this.make.tilemap({
 			data: this.outputDataGrass,
@@ -584,4 +585,42 @@ class MapGen extends Phaser.Scene
 		this.grassLayer = this.mapGrass.createLayer(0, this.tilesheet, 0, 0);
         this.dirtLayer = this.mapSand.createLayer(0, this.tilesheet, 0, 0);
 	}
+
+	setGrassTransition() {
+        for (let y = 0; y < this.mapHeight; y++) {
+            for (let x = 0; x < this.mapWidth; x++) {
+
+                // decide on transition depending on current tile type and where it is touching water
+                if (this.grassPlacement[y][x] == this.grassTile) { // for grass
+                    if (x < this.mapWidth -1 && this.grassPlacement[y][x + 1] == this.blankTile) { // right
+                        this.grassPlacement[y][x] = 26;
+                    }
+                    else if (x > 0 && this.grassPlacement[y][x - 1] == this.blankTile) { // left
+                        this.grassPlacement[y][x] = 54;
+                    }
+
+                    if (y < this.mapHeight - 1 && this.grassPlacement[y + 1][x] == this.blankTile) { // under
+                        this.grassPlacement[y][x] = 10;
+
+                        if (x < this.mapWidth - 1 && this.grassPlacement[y][x + 1] == this.blankTile) { // under and right
+                            this.grassPlacement[y][x] = 11;
+                        }
+                        else if (x > 0 && this.grassPlacement[y][x - 1] == this.blankTile) { // under and left
+                            this.grassPlacement[y][x] = 24;
+                        }
+                    }
+                    else if (y > 0 && this.grassPlacement[y - 1][x] == this.blankTile) { // above
+                        this.grassPlacement[y][x] = 55;
+
+                        if (x < this.mapWidth - 1 && this.grassPlacement[y][x + 1] == this.blankTile) { // above and right
+                            this.grassPlacement[y][x] = 41;
+                        }
+                        else if (x > 0 && this.grassPlacement[y][x - 1] == this.blankTile) { // above and left
+                            this.grassPlacement[y][x] = 69;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
